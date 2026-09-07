@@ -1,0 +1,131 @@
+
+# Sass
+# Compiled CSS generated from SCSS
+*.css
+
+# Sass source maps
+*.css.map
+
+# Sass cache
+.sass-cache/
+
+
+# Dependencies
+
+# Node.js dependencies
+node_modules/
+
+# Node.js package manager logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Package manager lockfiles are tracked
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+
+# Environment and secrets
+
+.env
+.env.*
+!.env.example
+
+# Local configuration files
+*.local
+
+# Private keys and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+
+
+# Logs
+
+*.log
+logs/
+log/
+storage/logs/
+
+
+# Temporary files
+
+*.tmp
+*.temp
+*.bak
+*.backup
+*.orig
+*~
+
+# PHP session files
+sess_*
+
+
+# Database files
+
+*.sqlite
+*.sqlite3
+*.db
+
+# Compressed database dumps
+*.sql.gz
+*.dump
+
+
+# Build and cache files
+
+.cache/
+.tmp/
+temp/
+tmp/
+out/
+build/
+dist/
+
+
+# IDE and editor files
+
+.vscode/
+.idea/
+*.iml
+
+# Vim swap files
+*.swp
+*.swo
+
+# VS Code / VSCodium local history
+.history/
+
+
+# Operating system files
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+
+
+# Browser and debugging files
+
+*.stackdump
+
+
+# Test artifacts
+
+test-results/
+playwright-report/
+
+
+# Generated files
+
+*.generated.*
+*.export.*

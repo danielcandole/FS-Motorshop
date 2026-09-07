@@ -32,15 +32,16 @@ const server = http.createServer((request, response) => {
   const url = new URL(request.url, `http://${request.headers.host}`);
 
   let filePath;
+  const relativePath = url.pathname.slice(1);
 
   if (url.pathname === "/") {
     filePath = path.join(publicDirectory, "index.html");
   } 
   else if (url.pathname.startsWith("/auth/") || url.pathname.startsWith("/component/") || url.pathname.startsWith("/page/")) {
-    filePath = path.join(publicDirectory, url.pathname);
+    filePath = path.join(publicDirectory, relativePath);
   } 
   else if (url.pathname.startsWith("/css/") || url.pathname.startsWith("/js/")) {
-    filePath = path.join(frontendDirectory, url.pathname);
+    filePath = path.join(frontendDirectory, relativePath);
   } 
   else {
     response.writeHead(404, {

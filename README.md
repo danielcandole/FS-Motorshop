@@ -36,7 +36,7 @@ php --version
 From the project root:
 
 ```bash
-cd ~/Luke/1Updated_files/comProjects/FS\ Motorshop
+cd FS-Motorshop
 ```
 
 Initialize npm:
@@ -76,14 +76,15 @@ Use:
   "name": "fs-motorshop",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "sass": "sass --watch frontend/scss/main.scss:public/css/main.css",
-    "php": "php -S localhost:8000 -t public",
-    "dev": "concurrently --kill-others \"npm run sass\" \"npm run php\""
+    "sass": "sass --watch frontend/scss/main.scss frontend/css/main.css",
+    "server": "node server/devServer.js",
+    "dev": "concurrently npm:sass npm:server"
   },
   "devDependencies": {
-    "concurrently": "^9.0.0",
-    "sass": "^1.0.0"
+    "concurrently": "^10.0.5",
+    "sass": "^1.104.0"
   }
 }
 ```

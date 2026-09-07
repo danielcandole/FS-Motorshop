@@ -5,11 +5,14 @@
   "type": "module",
   "scripts": {
     "sass": "sass --watch frontend/scss/main.scss frontend/css/main.css",
-    "server": "node server/devServer.js",
+    "server": "node --env-file=.env server/server.js",
     "dev": "concurrently npm:sass npm:server"
   },
   "devDependencies": {
     "concurrently": "^10.0.5",
     "sass": "^1.104.0"
+  },
+  "dependencies": {
+    "mysql2": "^3.24.3"
   }
 }

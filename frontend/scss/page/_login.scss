@@ -1,4 +1,5 @@
 @use "../abstracts/variables" as *;
+@use "sass:color";
 
 $login-width: 420px;
 
@@ -7,6 +8,7 @@ $surface: #fff;
 $border: #ddd;
 $input-border: #ccc;
 $text: #222;
+$text-hover: #3c3c3c;
 $muted: #666;
 
 $radius: 10px;
@@ -147,7 +149,7 @@ $input-radius: 5px;
         cursor: pointer;
 
         &:hover {
-          background: lighten($text, 10%);
+          background: $text-hover;
         }
 
         &:active {

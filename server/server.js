@@ -32,31 +32,21 @@ const mimeTypes = {
 
 function sendFile(filePath, response) {
   if (!fs.existsSync(filePath)) {
-    response.writeHead(404, {
-      "Content-Type": "text/plain"
-    });
-
+    response.writeHead(404, {"Content-Type": "text/plain"});
     response.end("404 Not Found");
     return;
   }
 
   if (!fs.statSync(filePath).isFile()) {
-    response.writeHead(404, {
-      "Content-Type": "text/plain"
-    });
-
+    response.writeHead(404, {"Content-Type": "text/plain"});
     response.end("404 Not Found");
     return;
   }
 
   const extension = path.extname(filePath);
-  const contentType =
-    mimeTypes[extension] || "application/octet-stream";
+  const contentType = mimeTypes[extension] || "application/octet-stream";
 
-  response.writeHead(200, {
-    "Content-Type": contentType
-  });
-
+  response.writeHead(200, {"Content-Type": contentType});
   fs.createReadStream(filePath).pipe(response);
 }
 
@@ -76,48 +66,26 @@ async function testDatabaseConnection() {
 }
 
 const server = http.createServer((request, response) => {
-  const url = new URL(
-    request.url,
-    `http://${request.headers.host}`
-  );
+  const url = new URL(request.url, `http://${request.headers.host}`);
 
   const pathname = url.pathname;
 
   if (pathname === "/") {
-    sendFile(
-      path.join(publicDirectory, "index.html"),
-      response
-    );
+    sendFile(path.join(publicDirectory, "index.html"), response);
     return;
   }
 
-  if (
-    pathname.startsWith("/auth/") ||
-    pathname.startsWith("/component/") ||
-    pathname.startsWith("/page/")
-  ) {
-    sendFile(
-      path.join(publicDirectory, pathname),
-      response
-    );
+  if (pathname.startsWith("/auth/") || pathname.startsWith("/component/") || pathname.startsWith("/page/")) {
+    sendFile(path.join(publicDirectory, pathname), response);
     return;
   }
 
-  if (
-    pathname.startsWith("/css/") ||
-    pathname.startsWith("/js/")
-  ) {
-    sendFile(
-      path.join(frontendDirectory, pathname),
-      response
-    );
+  if (pathname.startsWith("/css/") || pathname.startsWith("/js/")) {
+    sendFile(path.join(frontendDirectory, pathname), response);
     return;
   }
 
-  response.writeHead(404, {
-    "Content-Type": "text/plain"
-  });
-
+  response.writeHead(404, {"Content-Type": "text/plain"});
   response.end("404 Not Found");
 });
 
@@ -125,11 +93,7 @@ async function startServer() {
   try {
     await testDatabaseConnection();
   
-    server.listen(PORT, () => {
-      console.log(
-        `Server running at http://localhost:${PORT}`
-      );
-    });
+    server.listen(PORT, () => {console.log(`Server running at http://localhost:${PORT}`);});
   } catch (error) {
     console.error("Server startup aborted.");
     process.exit(1);

@@ -1,3 +1,5 @@
+import { initLoginForm } from "../auth/login.js";
+
 const routes = {
   "/login": "/auth/login.html",
   "/billing": "/page/billing.html"
@@ -41,7 +43,10 @@ async function loadPage(route) {
 
     pageContent.innerHTML = html;
 
+    if (route === "/login") {initLoginForm();}
+
     console.log(`Page Router: loaded ${route}`);
+
   } catch (error) {
     console.error("Page Router:", error);
 

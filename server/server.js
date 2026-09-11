@@ -9,7 +9,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const projectRoot = path.resolve(__dirname, "..");
-
 const publicDirectory = path.join(projectRoot, "public");
 const frontendDirectory = path.join(projectRoot, "frontend");
 
@@ -92,7 +91,7 @@ const server = http.createServer((request, response) => {
 async function startServer() {
   try {
     await testDatabaseConnection();
-  
+    
     server.listen(PORT, () => {console.log(`Server running at http://localhost:${PORT}`);});
   } catch (error) {
     console.error("Server startup aborted.");

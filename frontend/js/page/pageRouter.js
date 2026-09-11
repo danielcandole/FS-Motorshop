@@ -2,6 +2,7 @@ import { initLoginForm } from "../auth/login.js";
 
 const routes = {
   "/login": "/auth/login.html",
+  "/dashboard": "page/dashboard.html",
   "/billing": "/page/billing.html"
 };
 

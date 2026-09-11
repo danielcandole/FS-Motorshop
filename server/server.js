@@ -2,6 +2,8 @@ import http from "http";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { handleAuthRoute } from "../backend/api/auth.js";
+
 
 import pool from "../backend/config/database.js";
 
@@ -64,10 +66,23 @@ async function testDatabaseConnection() {
   }
 }
 
-const server = http.createServer((request, response) => {
+const server = http.createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host}`);
-
   const pathname = url.pathname;
+
+  if (pathname.startsWith("/api/")) {
+    try {
+      const body = await parseJsonBody(request);
+      const handled = await handleAuthRoute(request, response, body);
+
+      if (handled) { return; }
+    } catch {
+      console. error("API request failed: ", error);
+      response.writeHead(500, {"Content-Type": "application/json"});
+      response.end(JSON.stringify({message: "Internal server error."}));
+      return;
+    }
+  }
 
   if (pathname === "/") {
     sendFile(path.join(publicDirectory, "index.html"), response);

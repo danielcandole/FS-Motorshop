@@ -5,9 +5,9 @@ export async function authenticationCredentials(email, password) {
   const [rows] = await pool.execute(
     `
     SELECT
-      employeeAccountId,
       email,
-      passwordHash
+      passwordHash,
+      accountStatus
     FROM employeeAccount
     WHERE email = ?
     LIMIT 1
@@ -19,7 +19,7 @@ export async function authenticationCredentials(email, password) {
 
   const employee = rows[0];
 
-  if (employee.accounrStatus !=="active") { return null;}
+  if (employee.accountStatus !=="active") { return null;}
 
   const passwordValid = verifyPassword(password, employee.passwordHash);
   if (!passwordValid) {return null;}

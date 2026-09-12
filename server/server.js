@@ -66,6 +66,18 @@ async function testDatabaseConnection() {
   }
 }
 
+async function parseJsonBody(request) {
+  const chunks = [];
+  for await (const chunk of request) {
+    chunks.push(chunk);
+  }
+
+  const body = Buffer.concat(chunks).toString("utf8");
+  if (!body) {return {};}
+
+  return JSON.parse(body);
+}
+
 const server = http.createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host}`);
   const pathname = url.pathname;
@@ -76,8 +88,8 @@ const server = http.createServer(async (request, response) => {
       const handled = await handleAuthRoute(request, response, body);
 
       if (handled) { return; }
-    } catch {
-      console. error("API request failed: ", error);
+    } catch (error) {
+      console.error("API request failed:", error);
       response.writeHead(500, {"Content-Type": "application/json"});
       response.end(JSON.stringify({message: "Internal server error."}));
       return;

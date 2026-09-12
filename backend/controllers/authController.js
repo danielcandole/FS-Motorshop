@@ -1,5 +1,5 @@
-import { validateLoginInput } from "../validators/authValidator";
-import { authenticationCredentials } from "../services/authenticationService";
+import { validateLoginInput } from "../validators/authValidator.js";
+import { authenticationCredentials } from "../services/authenticationService.js";
 
 export async function login(request, response, body) {
 
@@ -8,7 +8,7 @@ export async function login(request, response, body) {
   if (!validation.valid) {
     response.writeHead(400, {"Content-Type": "application/json"});
     response.end(JSON.stringify({message: "Invalid login input.", errors: validation.errors}));
-    return 0;
+    return;
   }
 
   const {email, password} = validation.data;

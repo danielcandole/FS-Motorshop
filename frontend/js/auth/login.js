@@ -22,7 +22,7 @@ async function handleLogin(event) {
       body: JSON.stringify({email, password})
     });
 
-    const result = await response.text();
+    const result = await response.json();
 
     if (!response.ok) {
       displayLoginError(result);
@@ -30,6 +30,7 @@ async function handleLogin(event) {
     }
 
     console.log("Login successful:", result);
+    window.location.hash = "/dashboard";
   } catch (error) {
     console.error("Login request failed:", error);
     displayLoginError({message: "Unable to connect to the server."});

@@ -10,10 +10,10 @@
   },
   "devDependencies": {
     "concurrently": "^10.0.5",
-    "sass": "^1.104.0"
+    "sass": "^1.104.1"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
-    "mysql2": "^3.24.3"
+    "mysql2": "^3.24.4"
   }
 }

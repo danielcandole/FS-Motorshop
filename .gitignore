@@ -60,6 +60,8 @@ sess_*
 *.sqlite
 *.sqlite3
 *.db
+*.sql
+
 
 # Database dumps
 *.sql.gz

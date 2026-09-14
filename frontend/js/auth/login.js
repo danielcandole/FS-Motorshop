@@ -30,7 +30,7 @@ async function handleLogin(event) {
     }
 
     console.log("Login successful:", result);
-    window.location.hash = "/dashboard";
+    //window.location.hash = "/dashboard"; handled by the server
   } catch (error) {
     console.error("Login request failed:", error);
     displayLoginError({message: "Unable to connect to the server."});

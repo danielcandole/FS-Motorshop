@@ -7,7 +7,8 @@ export async function authenticationCredentials(email, password) {
     SELECT
       email,
       passwordHash,
-      accountStatus
+      accountStatus,
+      role
     FROM employeeAccount
     WHERE email = ?
     LIMIT 1

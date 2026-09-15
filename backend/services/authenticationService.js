@@ -2,9 +2,9 @@ import pool from "../config/database.js";
 import { verifyPassword } from "./passwordService.js";
 
 export async function authenticationCredentials(email, password) {
-  const [rows] = await pool.execute(
-    `
+  const [rows] = await pool.execute(`
     SELECT
+      employeeAccountId,
       email,
       passwordHash,
       accountStatus,
@@ -12,9 +12,7 @@ export async function authenticationCredentials(email, password) {
     FROM employeeAccount
     WHERE email = ?
     LIMIT 1
-    `,
-    [email]
-  );
+  `,[email]);
 
   if (rows.length === 0) { return null; }
 

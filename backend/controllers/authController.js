@@ -1,5 +1,6 @@
 import { validateLoginInput } from "../validators/authValidator.js";
 import { authenticationCredentials } from "../services/authenticationService.js";
+import { createSession } from "../services/sessionService.js";
 
 export async function login(request, response, body) {
 
@@ -21,11 +22,26 @@ export async function login(request, response, body) {
     return;
   }
 
+  const sessionToken = await createSession(employee.employeeAccountId);
+
+  response.setHeader("Set-Cookie", `sessionToken=${sessionToken}; HttpOnly; SameSite=Strict; Path=/`);
+
   response.writeHead(200, {"Content-Type": "application/json"});
   response.end(JSON.stringify({message: "Login successfull.", employee: employee}));
 }
 
+export async function logout(request, response) {
+  const sessionToken = getCookie(request, "sessionToken");
 
+  if (sessionToken) {
+    await deleteSession(sessionToken);
+  }
+
+  response.setHeader("Set-Cookie", "sessionToken=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0");
+
+  response.writeHead(200, {"Content-Type": "application/json"});
+  response.end(JSON.stringify({message: "Logout successful."}));
+}
 
 
 

@@ -2,9 +2,31 @@ import { initLoginForm } from "../auth/login.js";
 
 const routes = {
   "/login": "/auth/login.html",
-  "/dashboard": "page/dashboard.html",
+  "/dashboard": "/page/dashboard.html",
   "/billing": "/page/billing.html"
 };
+
+async function getCurrentEmployee() {
+  const response = await fetch("/api/auth/me");
+  if (!response.ok) { return null; }
+
+  return await response.json();
+}
+
+
+async function loadComponent(elementId, path) {
+  const element = document.getElementById(elementId);
+  if (!element) {
+    console.error(`Page Router: #${elementId} was not found`);
+  }
+
+  const response = await fetch(path);
+
+  if (!response.ok) {
+    throw new Error(`Failed to load ${path}: ${response.status} ${response.statusText}`);
+  }
+  element.innerHTML = await response.text();
+}
 
 function getRoute() {
   const hash = window.location.hash;
@@ -62,10 +84,13 @@ async function loadPage(route) {
 
 export async function navigate() {
   const route = getRoute();
-
   console.log("Page Router: navigating to", route);
+  if (route === "/login") { await loadPage(route); return;}
+  if(!await getCurrentEmployee()) { window.location.hash = "/login"; return; }
 
-  await loadPage(route);
+  await loadComponent("header", "/component/header.html");
+  await loadComponent("sidebar", "/component/sidebar.html");
+  loadPage(route);
 }
 
 window.addEventListener("hashchange", navigate);

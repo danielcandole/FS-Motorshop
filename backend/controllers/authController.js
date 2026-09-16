@@ -43,5 +43,9 @@ export async function logout(request, response) {
   response.end(JSON.stringify({message: "Logout successful."}));
 }
 
+export async function getLoggedEmployee(request, response) {
+  //tbc
+}
+
 
 

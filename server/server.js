@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { handleAuthRoute } from "../backend/api/auth.js";
+import { authenticate } from "../backend/middleware/authenticationMiddleware.js";
 
 
 import pool from "../backend/config/database.js";
@@ -88,6 +89,9 @@ const server = http.createServer(async (request, response) => {
       const handled = await handleAuthRoute(request, response, body);
 
       if (handled) { return; }
+      response.writeHead(404, {"Content-Type": "application/json"});
+      response.end(JSON.stringify({message: "API route not found."}));
+      return;
     } catch (error) {
       console.error("API request failed:", error);
       response.writeHead(500, {"Content-Type": "application/json"});
@@ -103,6 +107,13 @@ const server = http.createServer(async (request, response) => {
 
   if (pathname.startsWith("/auth/") || pathname.startsWith("/component/") || pathname.startsWith("/page/")) {
     sendFile(path.join(publicDirectory, pathname), response);
+    return;
+  }
+
+  if (pathname.startsWith("/page/") || pathname.startsWith("/component/")) {
+    if (!await authenticate(request, response)) { return; }
+
+    sendFile(path.join(frontendDirectory, pathname), response);
     return;
   }
 

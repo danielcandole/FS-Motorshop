@@ -1,5 +1,5 @@
 import { getCookie } from "../utils/cookie.js";
-import { getSession } from "../services/sessionService";
+import { getSession } from "../services/sessionService.js";
 import pool from "../config/database.js";
 
 export async function authenticate(request, response) {

@@ -1,6 +1,8 @@
 import { validateLoginInput } from "../validators/authValidator.js";
 import { authenticationCredentials } from "../services/authenticationService.js";
-import { createSession } from "../services/sessionService.js";
+import { createSession, deleteSession } from "../services/sessionService.js";
+import { authenticate } from "../middleware/authenticationMiddleware.js";
+import { getCookie } from "../utils/cookie.js";
 
 export async function login(request, response, body) {
 
@@ -22,9 +24,12 @@ export async function login(request, response, body) {
     return;
   }
 
-  const sessionToken = await createSession(employee.employeeAccountId);
+  const {sessionToken, csrfToken} = await createSession(employee.employeeAccountId);
 
-  response.setHeader("Set-Cookie", `sessionToken=${sessionToken}; HttpOnly; SameSite=Strict; Path=/`);
+  response.setHeader("Set-Cookie", [
+    `sessionToken=${sessionToken}; HttpOnly; SameSite=Strict; Path=/`,
+    `csrfToken=${csrfToken}; SameSite=Strict; Path=/`
+  ]);
 
   response.writeHead(200, {"Content-Type": "application/json"});
   response.end(JSON.stringify({message: "Login successfull.", employee: employee}));
@@ -44,7 +49,10 @@ export async function logout(request, response) {
 }
 
 export async function getLoggedEmployee(request, response) {
-  //tbc
+  const employee = await authenticate(request, response);
+  if (!employee) { return; }
+  response.writeHead(200, {"Content-Type": "application/json"});
+  response.end(JSON.stringify({authenticated: true, employee: employee}));
 }
 
 

@@ -105,7 +105,7 @@ const server = http.createServer(async (request, response) => {
     return;
   }
 
-  if (pathname.startsWith("/auth/") || pathname.startsWith("/component/") || pathname.startsWith("/page/")) {
+  if (pathname.startsWith("/auth/")) {
     sendFile(path.join(publicDirectory, pathname), response);
     return;
   }

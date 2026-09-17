@@ -1,5 +1,5 @@
 import { initLoginForm } from "../auth/login.js";
-
+import { initLogoutBtn } from "../auth/logout.js";
 const routes = {
   "/login": "/auth/login.html",
   "/dashboard": "/page/dashboard.html",
@@ -9,15 +9,15 @@ const routes = {
 async function getCurrentEmployee() {
   const response = await fetch("/api/auth/me");
   if (!response.ok) { return null; }
-
-  return await response.json();
+  const result = await response.json();
+  return result.employee;
 }
 
 
 async function loadComponent(elementId, path) {
   const element = document.getElementById(elementId);
   if (!element) {
-    console.error(`Page Router: #${elementId} was not found`);
+    console.error(`Page Router: #${elementId} was not found`); return;
   }
 
   const response = await fetch(path);
@@ -84,13 +84,32 @@ async function loadPage(route) {
 
 export async function navigate() {
   const route = getRoute();
-  console.log("Page Router: navigating to", route);
-  if (route === "/login") { await loadPage(route); return;}
-  if(!await getCurrentEmployee()) { window.location.hash = "/login"; return; }
+  const sidebar = document.getElementById("sidebar");
 
-  await loadComponent("header", "/component/header.html");
-  await loadComponent("sidebar", "/component/sidebar.html");
-  loadPage(route);
+
+
+  try {
+    if (route === "/login") {
+        if (sidebar) {
+          sidebar.innerHTML = "";
+          sidebar.style.display = "none";
+        }
+    } else {
+
+      if (!await getCurrentEmployee()) { 
+        window.location.hash = "/login";
+        return;
+      }
+
+      if (sidebar) { sidebar.style.display = ""; }
+
+      await loadComponent("sidebar", "/component/sidebar.html");
+      initLogoutBtn();
+    }
+
+    await loadPage(route);
+  } catch (error) {
+    console.error("Page Router navigation failed:", error);
+  }
 }
-
 window.addEventListener("hashchange", navigate);

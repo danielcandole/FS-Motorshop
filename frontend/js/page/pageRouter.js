@@ -15,7 +15,7 @@ const routes = {
 
   // Inventory Management
   "/parts-inventory": "/page/partInventory.html",
-  "/stock-card": "/page/stockCard.html",
+  "/stock-transaction": "/page/stockTransaction.html",
   "/suppliers": "/page/supplier.html",
   "/supplies": "/page/supplies.html",
 
@@ -25,6 +25,7 @@ const routes = {
 
   // Reports
   "/reports": "/page/salesReport.html",
+  "/expenses": "/page/expenses.html",
   "/inventory-reports": "/page/inventoryReport.html"
 };
 

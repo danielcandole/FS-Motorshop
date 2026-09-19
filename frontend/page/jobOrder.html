@@ -1,1 +1,121 @@
-<h1>job order</h1>
+
+<section class="jobOrdersPage" aria-labelledby="jobOrdersTitle">
+  <header class="pageHeader">
+    <div class="pageHeaderContent">
+      <h1 id="jobOrdersTitle">Job Orders</h1>
+      <p>Manage motorcycle repair and maintenance orders.</p>
+    </div>
+
+    <button
+      class="primaryButton"
+      type="button"
+      id="createJobOrderButton"
+    >
+      Create Job Order
+    </button>
+  </header>
+
+  <section class="jobOrdersSection" aria-labelledby="jobOrdersListTitle">
+    <header class="sectionHeader">
+      <h2 id="jobOrdersListTitle">All Job Orders</h2>
+    </header>
+
+    <div class="tableContainer">
+      <table class="jobOrdersTable">
+        <thead>
+          <tr>
+            <th scope="col">Job Order #</th>
+            <th scope="col">Customer</th>
+            <th scope="col">Motorcycle</th>
+            <th scope="col">Service</th>
+            <th scope="col">Date</th>
+            <th scope="col">Status</th>
+            <th scope="col">Action</th>
+          </tr>
+        </thead>
+
+        <tbody id="jobOrdersTableBody">
+          <tr>
+            <td colspan="7">No job orders available.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</section>
+
+
+
+<dialog class="jobOrderModal" id="jobOrderModal">
+  <form class="jobOrderForm" id="jobOrderForm">
+    <header class="modalHeader">
+      <div>
+        <h2>Create Job Order</h2>
+        <p>Enter the customer and motorcycle details.</p>
+      </div>
+
+      <button
+        class="modalCloseButton"
+        type="button"
+        id="closeJobOrderModal"
+        aria-label="Close modal"
+      >
+        &times;
+      </button>
+    </header>
+
+    <div class="modalBody">
+      <div class="formGroup">
+        <label for="customerId">Customer</label>
+        <select id="customerId" name="customerId" required>
+          <option value="">Select customer</option>
+        </select>
+      </div>
+
+      <div class="formGroup">
+        <label for="motorcycleId">Motorcycle</label>
+        <select id="motorcycleId" name="motorcycleId" required>
+          <option value="">Select motorcycle</option>
+        </select>
+      </div>
+
+      <div class="formGroup">
+        <label for="jobOrderDate">Date</label>
+        <input
+          type="date"
+          id="jobOrderDate"
+          name="jobOrderDate"
+          required
+        >
+      </div>
+
+      <div class="formGroup">
+        <label for="jobOrderDescription">Reported Problem</label>
+        <textarea
+          id="jobOrderDescription"
+          name="jobOrderDescription"
+          rows="4"
+          placeholder="Describe the reported motorcycle problem..."
+          required
+        ></textarea>
+      </div>
+    </div>
+
+    <footer class="modalFooter">
+      <button
+        class="secondaryButton"
+        type="button"
+        id="cancelJobOrderButton"
+      >
+        Cancel
+      </button>
+
+      <button
+        class="primaryButton"
+        type="submit"
+      >
+        Create Job Order
+      </button>
+    </footer>
+  </form>
+</dialog>

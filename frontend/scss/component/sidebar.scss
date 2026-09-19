@@ -1,78 +1,230 @@
 
 @use "../abstracts/variables" as *;
 
-$sidebar-width: 260px;
-$sidebar-background: #1e1e25;
-$sidebar-text: #f5f5f7;
-$sidebar-muted: #b5b5c0;
-$sidebar-hover: #34343f;
+// Dimensions
+$sidebarWidth: 260px;
+$sidebarHeight: 100vh;
+$sidebarZIndex: 1000;
 
+// Colors
+$sidebarBackground: #1e1e25;
+$sidebarText: #f5f5f7;
+$sidebarMuted: #b5b5c0;
+$sidebarHover: #34343f;
+$sidebarActive: #454552;
+$sidebarBorder: #34343f;
+$sidebarScrollbarThumb: #34343f;
+$sidebarScrollbarThumbHover: #454552;
+
+// Typography
+$sidebarTitleFontSize: $s8;
+$sidebarTitleFontWeight: 700;
+$sidebarTitleLineHeight: 1.2;
+
+$sidebarNavFontSize: $s4;
+$sidebarNavLineHeight: 1.5;
+
+$sidebarCategoryFontSize: $s3;
+$sidebarCategoryFontWeight: 400;
+$sidebarCategoryLineHeight: 1.4;
+$sidebarCategoryLetterSpacing: 0.06em;
+
+// Borders
+$sidebarBorderWidth: 1px;
+$sidebarBorderRadius: 5px;
+
+// Spacing
+$sidebarInset: 0 auto 0 0;
+$sidebarPadding: $s4 $s4 $s4 $s4;
+
+$sidebarHeaderMargin: 0 0 $s2 0;
+$sidebarHeaderPadding: 0 0 $s2 0;
+
+$sidebarNavGap: $s2;
+$sidebarCategoryGap: $s0;
+
+$sidebarLinkPadding: $s2 $s2 $s2 $s2;
+$sidebarSubLinkPadding: 0 $s4 0 $s4;
+
+$sidebarFooterPadding: $s4 0 0 0;
+$sidebarFooterGap: $s1;
+
+// Transitions
+$sidebarTransitionDuration: 0.2s;
+$sidebarTransitionTiming: ease;
+
+// Focus
+$sidebarFocusOutline: 2px solid $sidebarText;
+$sidebarFocusOutlineOffset: 2px;
+
+// Sidebar
 .sidebar {
-  width: $sidebar-width;
-  height: 100vh;
+  position: fixed;
+  inset: $sidebarInset;
+  z-index: $sidebarZIndex;
+
+  width: $sidebarWidth;
+  height: $sidebarHeight;
   box-sizing: border-box;
-  padding: $s6;
+  padding: $sidebarPadding;
 
   display: flex;
   flex-direction: column;
 
-  background: $sidebar-background;
-  color: $sidebar-text;
+  overflow-y: auto;
+  overflow-x: hidden;
 
+  background: $sidebarBackground;
+  color: $sidebarText;
+  border-right: $sidebarBorderWidth solid $sidebarBorder;
+
+  scrollbar-width: thin;
+  scrollbar-color: $sidebarScrollbarThumb $sidebarBackground;
+
+  &::-webkit-scrollbar {
+    width: $s1;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: $sidebarBackground;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: $sidebarScrollbarThumb;
+    border-radius: $sidebarBorderRadius;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: $sidebarScrollbarThumbHover;
+  }
+
+  // Sidebar Header
   .sidebarHeader {
-    margin-bottom: $s8;
+    margin: $sidebarHeaderMargin;
+    padding: $sidebarHeaderPadding;
+    border-bottom: $sidebarBorderWidth solid $sidebarBorder;
 
-    h1 {
+    .sidebarTitle {
       margin: 0;
-      font-size: $s8;
-      line-height: 1.2;
+      font-size: $sidebarTitleFontSize;
+      line-height: $sidebarTitleLineHeight;
+      font-weight: $sidebarTitleFontWeight;
+      color: $sidebarText;
     }
   }
 
+  // Navigation Container
   .sidebarNav {
     display: flex;
     flex-direction: column;
-    gap: $s2;
+    gap: $sidebarNavGap;
 
-    a {
+    // Shared Navigation Links
+    .navLink {
       display: block;
-      padding: $s2 $s3;
-      border-radius: 5px;
+      box-sizing: border-box;
+      padding: $sidebarLinkPadding;
+      border-radius: $sidebarBorderRadius;
 
-      color: $sidebar-muted;
+      color: $sidebarText;
       text-decoration: none;
+      font-size: $sidebarNavFontSize;
+      line-height: $sidebarNavLineHeight;
+
+      transition:
+        background-color $sidebarTransitionDuration $sidebarTransitionTiming,
+        color $sidebarTransitionDuration $sidebarTransitionTiming;
 
       &:hover {
-        background: $sidebar-hover;
-        color: $sidebar-text;
+        background: $sidebarHover;
+        color: $sidebarText;
       }
 
       &.active {
-        background: $sidebar-hover;
-        color: $sidebar-text;
+        background: $sidebarActive;
+        color: $sidebarText;
+        font-weight: 600;
+      }
+    }
+
+    // Category Groups
+    .navCategory {
+      display: flex;
+      flex-direction: column;
+      gap: $sidebarCategoryGap;
+
+      // Category Heading
+      .navCategoryTitle {
+        margin: 0;  
+        padding: $sidebarLinkPadding;
+
+        color: $sidebarMuted;
+        font-size: $sidebarCategoryFontSize;
+        font-weight: $sidebarCategoryFontWeight;
+        line-height: $sidebarCategoryLineHeight;
+        text-transform: uppercase;
+        letter-spacing: $sidebarCategoryLetterSpacing;
+      }
+
+      // Indented Subcategory Links
+      .navLink {
+        padding: $sidebarSubLinkPadding;
       }
     }
   }
 
+  // Sidebar Footer
   .sidebarFooter {
+    display: flex;
+    flex-direction: column;
+    gap: $sidebarFooterGap;
+
     margin-top: auto;
-    padding-top: $s6;
+    padding: $sidebarFooterPadding;
 
-    button {
-      width: 100%;
-      padding: $s2 $s4;
+    border-top: $sidebarBorderWidth solid $sidebarBorder;
 
-      border: 0;
-      border-radius: 5px;
+    .navLink {
+      display: block;
+      padding: $sidebarLinkPadding;
+      border-radius: $sidebarBorderRadius;
 
-      background: $sidebar-hover;
-      color: $sidebar-text;
-
-      font: inherit;
-      cursor: pointer;
+      color: $sidebarText;
+      text-decoration: none;
 
       &:hover {
-        background: #454552;
+        background: $sidebarHover;
+        color: $sidebarText;
+      }
+
+      &.active {
+        background: $sidebarActive;
+        color: $sidebarText;
+      }
+    }
+
+    .logoutButton {
+      width: 100%;
+      padding: $sidebarLinkPadding;
+      border: 0;
+      border-radius: $sidebarBorderRadius;
+
+      background: $sidebarHover;
+      color: $sidebarText;
+
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+
+      transition: background-color $sidebarTransitionDuration $sidebarTransitionTiming;
+
+      &:hover {
+        background: $sidebarActive;
+      }
+
+      &:focus-visible {
+        outline: $sidebarFocusOutline;
+        outline-offset: $sidebarFocusOutlineOffset;
       }
     }
   }

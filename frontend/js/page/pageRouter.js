@@ -3,7 +3,29 @@ import { initLogoutBtn } from "../auth/logout.js";
 const routes = {
   "/login": "/auth/login.html",
   "/dashboard": "/page/dashboard.html",
-  "/billing": "/page/billing.html"
+
+  // Service Management
+  "/employee": "/page/employee.html",
+  "/job-orders": "/page/jobOrder.html",
+  "/service-records": "/page/serviceRecord.html",
+
+  // Customer Management
+  "/customer-records": "/page/customerRecord.html",
+  "/motorcycles": "/page/motorcycleRecord.html",
+
+  // Inventory Management
+  "/parts-inventory": "/page/partInventory.html",
+  "/stock-card": "/page/stockCard.html",
+  "/suppliers": "/page/supplier.html",
+  "/supplies": "/page/supplies.html",
+
+  // Financial Management
+  "/billing": "/page/billing.html",
+  "/payments": "/page/payment.html",
+
+  // Reports
+  "/reports": "/page/salesReport.html",
+  "/inventory-reports": "/page/inventoryReport.html"
 };
 
 async function getCurrentEmployee() {

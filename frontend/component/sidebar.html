@@ -1,21 +1,90 @@
 <header class="sidebarHeader">
-  <h1>FS Motorshop</h1>
+  <h1 class="sidebarTitle">FS Motorshop</h1>
 </header>
 
 <nav class="sidebarNav" aria-label="Main navigation">
-  <a href="#/dashboard">Dashboard</a>
-  <a href="#/job-orders">Job Orders</a>
-  <a href="#/customer-records">Customer Records</a>
-  <a href="#/motorcycles">Motorcycles</a>
-  <a href="#/parts-inventory">Parts Inventory</a>
-  <a href="#/stock-card">Stock Card</a>
-  <a href="#/supplies">Supplies</a>
-  <a href="#/billing">Billing &amp; Payments</a>
-  <a href="#/expenses">Expenses</a>
-  <a href="#/reports">Reports</a>
-  <a href="#/settings">Settings</a>
+  <a class="navLink dashboardLink" href="#/dashboard">
+    Dashboard
+  </a>
+
+  <div class="navCategory serviceManagementCategory">
+    <h3 class="navCategoryTitle">Service Management</h3>
+    <a class="navLink jobOrdersLink" href="#/employee">
+      Employees
+    </a>
+
+    <a class="navLink jobOrdersLink" href="#/job-orders">
+      Job Orders
+    </a>
+
+    <a class="navLink serviceRecordsLink" href="#/service-records">
+      Service Records
+    </a>
+  </div>
+
+  <div class="navCategory customerManagementCategory">
+    <h3 class="navCategoryTitle">Customer Management</h3>
+
+    <a class="navLink customerRecordsLink" href="#/customer-records">
+      Customer Records
+    </a>
+
+    <a class="navLink motorcycleRecordsLink" href="#/motorcycles">
+      Motorcycle Records
+    </a>
+  </div>
+
+  <div class="navCategory inventoryManagementCategory">
+    <h3 class="navCategoryTitle">Inventory Management</h3>
+
+    <a class="navLink partsInventoryLink" href="#/parts-inventory">
+      Parts Inventory
+    </a>
+
+    <a class="navLink stockCardLink" href="#/stock-card">
+      Stock Card
+    </a>
+
+    <a class="navLink suppliersLink" href="#/suppliers">
+      Suppliers
+    </a>
+
+    <a class="navLink suppliesLink" href="#/supplies">
+      Supplies
+    </a>
+  </div>
+
+  <div class="navCategory financialManagementCategory">
+    <h3 class="navCategoryTitle">Financial Management</h3>
+
+    <a class="navLink billingLink" href="#/billing">
+      Billing &amp; Payments
+    </a>
+  </div>
+
+  <div class="navCategory reportsCategory">
+    <h3 class="navCategoryTitle">Reports</h3>
+
+    <a class="navLink salesReportsLink" href="#/reports">
+      Sales Reports
+    </a>
+
+    <a class="navLink inventoryReportsLink" href="#/inventory-reports">
+      Inventory Reports
+    </a>
+  </div>
 </nav>
 
 <footer class="sidebarFooter">
-  <button type="button" id="logoutBtn">Logout</button>
+  <a class="navLink settingsLink" href="#/settings">
+    Settings
+  </a>
+
+  <button
+    class="logoutButton"
+    type="button"
+    id="logoutBtn"
+  >
+    Logout
+  </button>
 </footer>

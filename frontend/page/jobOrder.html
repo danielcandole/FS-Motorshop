@@ -11,7 +11,7 @@
       type="button"
       id="createJobOrderButton"
     >
-      Create Job Order
+      Create
     </button>
   </header>
 
@@ -48,119 +48,122 @@
 
 <dialog class="jobOrderModal" id="jobOrderModal">
   <form class="jobOrderForm" id="jobOrderForm">
-    <header class="modalHeader">
-      <div>
-        <h2>Create Job Order</h2>
-        <p>Enter the customer and motorcycle details.</p>
-      </div>
-
-      <button
-        class="modalCloseButton"
-        type="button"
-        id="closeJobOrderModal"
-        aria-label="Close modal"
-      >
-        &times;
-      </button>
-    </header>
-    
-    <div class="modalBody">
-      <div class="formGroup">
-        <label for="customerName">Customer Name</label>
-        <input
-          type="text"
-          id="customerName"
-          name="customerName"
-          placeholder="Enter customer name"
-          required
+    <div class="formPadding">
+      <header class="modalHeader">
+        <div>
+          <h2>Create Job Order</h2>
+          <p>Enter the customer and motorcycle details.</p>
+        </div>
+  
+        <button
+          class="modalCloseButton"
+          type="button"
+          id="closeJobOrderModal"
+          aria-label="Close modal"
         >
+          &times;
+        </button>
+      </header>
+      
+      <div class="modalBody">
+        <div class="formGroup">
+          <label for="customerName">Customer Name</label>
+          <input
+            type="text"
+            id="customerName"
+            name="customerName"
+            placeholder="Enter customer name"
+            required
+          >
+        </div>
+  
+        <div class="formGroup">
+          <label for="customerContactNumber">Contact Number</label>
+          <input
+            type="text"
+            id="customerContactNumber"
+            name="customerContactNumber"
+            placeholder="Enter customer contact number"
+            required
+          >
+        </div>
+  
+        <div class="formGroup">
+          <label for="motorcycleName">Motorcycle Name</label>
+          <input
+            type="text"
+            id="motorcycleName"
+            name="motorcycleName"
+            placeholder="Enter motorcycle name"
+            required
+          >
+        </div>
+  
+        <div class="formGroup">
+          <label for="motorcycleModel">
+            Motorcycle Model
+          </label>
+          <input
+            type="text"
+            id="motorcycleModel"
+            name="motorcycleModel"
+            placeholder="Enter motorcycle model (Optional)"
+          >
+        </div>
+  
+        <div class="formGroup">
+          <label for="repairDate">Repair Date</label>
+          <input
+            type="date"
+            id="repairDate"
+            name="repairDate"
+            required
+          >
+        </div>
+  
+        <div class="formGroup">
+          <label for="reportedProblem">
+            Reported Problem
+          </label>
+          <textarea
+            id="reportedProblem"
+            name="reportedProblem"
+            rows="4"
+            placeholder="Describe the reported motorcycle problem... (Optional)"
+          ></textarea>
+        </div>
+  
+        <div class="formGroup">
+          <label for="repairStatus">Repair Status</label>
+          <select
+            id="repairStatus"
+            name="repairStatus"
+            required
+          >
+            <option value="pending" selected>Pending</option>
+            <option value="in-progress">In Progress</option>
+            <option value="done">Done</option>
+          </select>
+        </div>
       </div>
-
-      <div class="formGroup">
-        <label for="customerContactNumber">Contact Number</label>
-        <input
-          type="tel"
-          id="customerContactNumber"
-          name="customerContactNumber"
-          placeholder="Enter customer contact number"
-          required
+  
+      <footer class="modalFooter">
+        <button
+          class="secondaryButton"
+          type="button"
+          id="cancelJobOrderButton"
         >
-      </div>
-
-      <div class="formGroup">
-        <label for="motorcycleName">Motorcycle Name</label>
-        <input
-          type="text"
-          id="motorcycleName"
-          name="motorcycleName"
-          placeholder="Enter motorcycle name"
-          required
+          Cancel
+        </button>
+  
+        <button
+          id="submitJobOrderButton"
+          class="primaryButton"
+          type="submit"
         >
-      </div>
-
-      <div class="formGroup">
-        <label for="motorcycleModel">
-          Motorcycle Model <span>(Optional)</span>
-        </label>
-        <input
-          type="text"
-          id="motorcycleModel"
-          name="motorcycleModel"
-          placeholder="Enter motorcycle model"
-        >
-      </div>
-
-      <div class="formGroup">
-        <label for="repairDate">Repair Date</label>
-        <input
-          type="date"
-          id="repairDate"
-          name="repairDate"
-          required
-        >
-      </div>
-
-      <div class="formGroup">
-        <label for="reportedProblem">
-          Reported Problem <span>(Optional)</span>
-        </label>
-        <textarea
-          id="reportedProblem"
-          name="reportedProblem"
-          rows="4"
-          placeholder="Describe the reported motorcycle problem..."
-        ></textarea>
-      </div>
-
-      <div class="formGroup">
-        <label for="repairStatus">Repair Status</label>
-        <select
-          id="repairStatus"
-          name="repairStatus"
-          required
-        >
-          <option value="pending" selected>Pending</option>
-          <option value="in-progress">In Progress</option>
-          <option value="done">Done</option>
-        </select>
-      </div>
+          Create
+        </button>
+      </footer>
     </div>
-
-    <footer class="modalFooter">
-      <button
-        class="secondaryButton"
-        type="button"
-        id="cancelJobOrderButton"
-      >
-        Cancel
-      </button>
-
-      <button
-        class="primaryButton"
-        type="submit"
-      >
-        Create Job Order
-      </button>
-    </footer>
   </form>
 </dialog>

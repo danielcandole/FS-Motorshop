@@ -3,7 +3,7 @@ import { setDefaultDate } from "../utils/dateUtils.js";
 export function initJobOrdersPage() {
   const createButton = document.getElementById("createJobOrderButton");
   const modal = document.getElementById("jobOrderModal");
-  const closeButton = document.getElementById("closeJobOrderButton");
+  const closeButton = document.getElementById("closeJobOrderModal");
   const cancelButton = document.getElementById("cancelJobOrderButton");
   const form = document.getElementById("jobOrderForm");
 
@@ -12,16 +12,12 @@ export function initJobOrdersPage() {
     return;
   }
 
-  createButton.addEventListener("click", () => {
-    modal.showModal();
-  });
-
   closeButton.addEventListener("click", () => {
-    modal.closest();
+    modal.close();
   });
 
   cancelButton.addEventListener("click", () => {
-    modal.closest();
+    modal.close();
   });
 
   createButton.addEventListener("click", () => {
@@ -44,13 +40,31 @@ export function initJobOrdersPage() {
           repairStatus: formData.get("repairStatus")
         }
 
-        console.log("Job Order Data: ", jobOrderData);
+        try {
+          const response = await fetch("/api/job-orders", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            credentials: "same-origin",
+            body: JSON.stringify(jobOrderData)
+          });
 
-        //TO Do: send data to your backend api
+          const result = await response.json();
 
-        modal.closest();
-        form.reset();
-        
-        //to do: pop up - added successfully 
+          if (!response.ok) {
+            throw new Error(result.message || "Failed to create job order");
+          }
+
+          console.log("Job Order created: ", result);
+          
+          modal.close();
+          form.reset();
+
+          //ToDo: reload job order to see the result
+          //to do: pop up "added successfully" 
+        }
+        catch (error) {
+          console.error("Create Job Order: ", error);
+          alert(error.message);
+        }
     });
 }

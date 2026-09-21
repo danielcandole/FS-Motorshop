@@ -1,12 +1,13 @@
 @use "../abstracts/variables" as *;
 
 .jobOrderModal {
+  box-sizing: border-box;
   width: min(600px, calc(100% - 32px));
   max-height: 90vh;
-  padding: 0;
+  padding: 20px 0;
   border: none;
   border-radius: 12px;
-  overflow: auto;
+  overflow: hidden;
 
   &::backdrop {
     background: rgba(0, 0, 0, 0.55);
@@ -14,8 +15,38 @@
   }
 
   .jobOrderForm {
-    display: flex;
-    flex-direction: column;
+    box-sizing: border-box;
+    width: 100%;
+    max-height: calc(90vh - 40px);
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    // Firefox
+    scrollbar-width: thin;
+    scrollbar-color: #c5c5c5 transparent;
+
+    // Chromium, Safari, and other WebKit-based browsers
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #c5c5c5;
+      border-radius: 10px;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background: #999;
+    }
+  }
+
+  .formPadding {
+    box-sizing: border-box;
+    width: 100%;
   }
 
   .modalHeader {
@@ -49,8 +80,8 @@
     input,
     select,
     textarea {
-      width: 100%;
       box-sizing: border-box;
+      width: 100%;
       padding: 10px 12px;
       border: 1px solid #ccc;
       border-radius: 6px;

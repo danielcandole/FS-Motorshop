@@ -1,5 +1,6 @@
 import { initLoginForm } from "../auth/login.js";
 import { initLogoutBtn } from "../auth/logout.js";
+import { initJobOrdersPage } from "./jobOrder.js";
 const routes = {
   "/login": "/auth/login.html",
   "/dashboard": "/page/dashboard.html",
@@ -90,7 +91,7 @@ async function loadPage(route) {
     pageContent.innerHTML = html;
 
     if (route === "/login") {initLoginForm();}
-
+    if (route === "/job-orders") {initJobOrdersPage();}
     console.log(`Page Router: loaded ${route}`);
 
   } catch (error) {

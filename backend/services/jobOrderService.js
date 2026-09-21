@@ -7,7 +7,7 @@ export async function createJobOrder(request) {
     await connection.beginTransaction();
 
     const {customerName, customerContactNumber, motorcycleName, motorcycleModel, repairDate, description, repairStatus} = request.validatedJobOrder;
-
+    const formattedRepairDate = repairDate.replace("T", " ") + ":00";
     // Find customer by contact number
     const [customers] = await connection.execute(`
       SELECT customerRecordId
@@ -86,7 +86,7 @@ export async function createJobOrder(request) {
     `, [
       request.employee.employeeAccountId,
       motorcycleRecordId,
-      repairDate,
+      formattedRepairDate,
       description || null,
       repairStatus
     ]);

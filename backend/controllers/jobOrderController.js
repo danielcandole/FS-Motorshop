@@ -44,7 +44,7 @@ export async function handleReadJobOrder(request, response) {
     if (!authorized(request, response, "manager")) {return;}
 
     const result = await readJobOrder(request);
-
+    
     sendJson(response, 200, {
       message: "Job orders fetched successfully.",
       data: result

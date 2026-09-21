@@ -12,6 +12,27 @@ export function isValidDate(value) {
   return (date.getUTCFullYear() === year &&date.getUTCMonth() === month - 1 &&date.getUTCDate() === day);
 }
 
+export function isValidDateTime(value) {
+  if (
+    typeof value !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)
+  ) {
+    return false;
+  }
+
+  const [datePart, timePart] = value.split("T");
+  const [year, month, day] = datePart.split("-").map(Number);
+  const [hours, minutes] = timePart.split(":").map(Number);
+
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  return date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day &&
+    hours >= 0 && hours <= 23 &&
+    minutes >= 0 && minutes <= 59;
+}
+
 export function isStringWithinLength(value, maxLength) {
   return (typeof value === "string" && value.trim().length <= maxLength);
 }
@@ -23,3 +44,4 @@ export function isOptionalString(value) {
 export function isNumericString(value) {
   return (typeof value === "string" && /^\d+$/.test(value));
 }
+

@@ -39,7 +39,7 @@ async function loadJobOrders() {
 
       const values = [
         jobOrder.customerName,
-        jobOrder.customerNo,
+        jobOrder.contactNo,
         jobOrder.motorcycleName,
         jobOrder.motorcycleModel,
         dateFormat(jobOrder.repairDate),
@@ -80,7 +80,9 @@ export async function initJobOrdersPage() {
     console.error("Job Orders: Required elements was not found.");
     return;
   }
+
   await loadJobOrders();
+
   closeButton.addEventListener("click", () => {
     modal.close();
   });

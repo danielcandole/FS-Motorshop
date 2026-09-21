@@ -1,4 +1,4 @@
-import { isNonEmptyString, isValidDate,isStringWithinLength, isOptionalString, isNumericString } from "../utils/inputValidation.js";
+import { isNonEmptyString, isValidDateTime ,isStringWithinLength, isOptionalString, isNumericString } from "../utils/inputValidation.js";
 
 const allowedRepairStatuses = ["pending","in-progress","done"];
 
@@ -46,7 +46,7 @@ export function validateJobOrderInput(body) {
   }
 
   // Repair date
-  if (!isValidDate(repairDate)) {
+  if (!isValidDateTime(repairDate)) {
     errors.push("Repair date must be a valid date in YYYY-MM-DD format.");
   }
 

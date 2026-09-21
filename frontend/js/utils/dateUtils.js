@@ -7,11 +7,11 @@ export function setDefaultDate(inputId) {
   }
 
   const today = new Date();
-  const localDate = new Date(
+  const localDateTime = new Date(
     today.getTime() - today.getTimezoneOffset() * 60000
-  ).toISOString().slice(0, 10);
+  ).toISOString().slice(0, 16);
 
-  dateInput.value = localDate;
+  dateInput.value = localDateTime;
 }
 
 export function dateFormat(value) {
@@ -19,13 +19,18 @@ export function dateFormat(value) {
     return "—";
   }
 
-  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  const date = new Date(value);
 
-  if (!match) {
+  if (Number.isNaN(date.getTime())) {
     return "Invalid date";
   }
 
-  const [, year, month, day] = match;
-
-  return `${month}/${day}/${year}`;
+  return date.toLocaleString("en-US", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true
+  });
 }

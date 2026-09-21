@@ -91,7 +91,7 @@ async function loadPage(route) {
     pageContent.innerHTML = html;
 
     if (route === "/login") {initLoginForm();}
-    if (route === "/job-orders") {initJobOrdersPage();}
+    if (route === "/job-orders") {await initJobOrdersPage();}
     console.log(`Page Router: loaded ${route}`);
 
   } catch (error) {

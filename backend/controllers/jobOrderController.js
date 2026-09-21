@@ -1,7 +1,7 @@
 import { validateJobOrderInput } from "../validators/validateJobOrder.js";
 import { authenticate } from "../middleware/authenticationMiddleware.js";
 import { authorized } from "../middleware/authorizationMiddleware.js";
-import { createJobOrder } from "../services/jobOrderService.js";
+import { createJobOrder, readJobOrder } from "../services/jobOrderService.js";
 
 function sendJson(response, statusCode, data) {
   response.writeHead(statusCode, {"Content-Type": "application/json"});
@@ -34,6 +34,27 @@ export async function handleCreateJobOrder(request, response) {
 
     sendJson(response, 500, {
       message: "Failed to create job order."
+    });
+  }
+}
+
+export async function handleReadJobOrder(request, response) {
+  try {
+    if (!await authenticate(request, response)) {return;}
+    if (!authorized(request, response, "manager")) {return;}
+
+    const result = await readJobOrder(request);
+
+    sendJson(response, 200, {
+      message: "Job orders fetched successfully.",
+      data: result
+    });
+  }
+  catch (error) {
+    console.error("Read Job Order:", error);
+
+    sendJson(response, 500, {
+      message: "Failed to fetch job orders."
     });
   }
 }

@@ -13,3 +13,19 @@ export function setDefaultDate(inputId) {
 
   dateInput.value = localDate;
 }
+
+export function dateFormat(value) {
+  if (!value) {
+    return "—";
+  }
+
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+
+  if (!match) {
+    return "Invalid date";
+  }
+
+  const [, year, month, day] = match;
+
+  return `${month}/${day}/${year}`;
+}

@@ -21,23 +21,21 @@
     </header>
 
     <div class="tableContainer">
-      <table class="jobOrdersTable">
+      <table class="jobOrdersTableHeader">
         <thead>
           <tr>
-            <th scope="col">Job Order #</th>
-            <th scope="col">Customer</th>
-            <th scope="col">Motorcycle</th>
-            <th scope="col">Service</th>
-            <th scope="col">Date</th>
-            <th scope="col">Status</th>
-            <th scope="col">Action</th>
+            <th scope="col">Customer Name</th>
+            <th scope="col">Contact Number</th>
+            <th scope="col">Motorcycle Name</th>
+            <th scope="col">Motorcycle Model</th>
+            <th scope="col">Repair Date</th>
+            <th scope="col">Description</th>
+            <th scope="col">Repair Status</th>
           </tr>
         </thead>
 
         <tbody id="jobOrdersTableBody">
-          <tr>
-            <td colspan="7">No job orders available.</td>
-          </tr>
+
         </tbody>
       </table>
     </div>
@@ -122,12 +120,12 @@
         </div>
   
         <div class="formGroup">
-          <label for="reportedProblem">
-            Reported Problem
+          <label for="description">
+            Description
           </label>
           <textarea
-            id="reportedProblem"
-            name="reportedProblem"
+            id="description"
+            name="description"
             rows="4"
             placeholder="Describe the reported motorcycle problem... (Optional)"
           ></textarea>

@@ -8,7 +8,7 @@ export function validateJobOrderInput(body) {
   if (!body || typeof body !== "object" || Array.isArray(body)) {
     return {valid: false, errors: ["Invalid request body."]}
   }
-  const {customerName, customerContactNumber, motorcycleName, motorcycleModel, repairDate, reportedProblem, repairStatus} = body;
+  const {customerName, customerContactNumber, motorcycleName, motorcycleModel, repairDate, description, repairStatus} = body;
 
   // Customer name
   if (!isNonEmptyString(customerName)) {
@@ -51,7 +51,7 @@ export function validateJobOrderInput(body) {
   }
 
   // Reported problem
-  if (!isOptionalString(reportedProblem)) {
+  if (!isOptionalString(description)) {
     errors.push("Reported problem must be a string or null.");
   }
 
@@ -69,7 +69,7 @@ export function validateJobOrderInput(body) {
       customerContactNumber:customerContactNumber.trim(),
       motorcycleName: motorcycleName.trim(),
       motorcycleModel:motorcycleModel?.trim() || null,repairDate,
-      reportedProblem:reportedProblem?.trim() || null,
+      description:description?.trim() || null,
       repairStatus: repairStatus
     },
     errors: []

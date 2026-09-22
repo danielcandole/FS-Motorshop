@@ -135,3 +135,165 @@ export async function readJobOrder() {
     throw error;
   }
 }
+
+
+export async function updateJobOrder(request) {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const jobOrderId = request.jobOrderId;
+
+    const {
+      customerName,
+      customerContactNumber,
+      motorcycleName,
+      motorcycleModel,
+      repairDate,
+      description,
+      repairStatus
+    } = request.validatedJobOrder;
+
+    const formattedRepairDate = repairDate.replace("T", " ") + ":00";
+
+    // Check whether the job order exists
+    const [jobOrders] = await connection.execute(`
+      SELECT jobOrderId
+      FROM jobOrder
+      WHERE jobOrderId = ?
+      LIMIT 1
+    `, [jobOrderId]);
+
+    if (jobOrders.length === 0) {
+      throw new Error("Job order not found.");
+    }
+
+    // Find customer using the new name and contact number
+    const [customers] = await connection.execute(`
+      SELECT customerRecordId
+      FROM customerRecord
+      WHERE customerName = ?
+        AND contactNo = ?
+      LIMIT 1
+    `, [
+      customerName,
+      customerContactNumber
+    ]);
+
+    let customerRecordId;
+
+    if (customers.length > 0) {
+      // Use the existing matching customer
+      customerRecordId = customers[0].customerRecordId;
+    }
+    else {
+      // Create a new customer if no matching record exists
+      const [customerResult] = await connection.execute(`
+        INSERT INTO customerRecord (
+          customerName,
+          contactNo
+        )
+        VALUES (?, ?)
+      `, [
+        customerName,
+        customerContactNumber
+      ]);
+
+      customerRecordId = customerResult.insertId;
+    }
+
+    // Find motorcycle belonging to the selected customer
+    const [motorcycles] = await connection.execute(`
+      SELECT motorcycleRecordId
+      FROM motorcycleRecord
+      WHERE customerRecordId = ?
+        AND motorcycleName = ?
+        AND motorcycleModel <=> ?
+      LIMIT 1
+    `, [
+      customerRecordId,
+      motorcycleName,
+      motorcycleModel || null
+    ]);
+
+    let motorcycleRecordId;
+
+    if (motorcycles.length > 0) {
+      // Use the existing matching motorcycle
+      motorcycleRecordId = motorcycles[0].motorcycleRecordId;
+    }
+    else {
+      // Create a motorcycle under the selected customer
+      const [motorcycleResult] = await connection.execute(`
+        INSERT INTO motorcycleRecord (
+          customerRecordId,
+          motorcycleName,
+          motorcycleModel
+        )
+        VALUES (?, ?, ?)
+      `, [
+        customerRecordId,
+        motorcycleName,
+        motorcycleModel || null
+      ]);
+
+      motorcycleRecordId = motorcycleResult.insertId;
+    }
+
+    // Update job order and associate it with the selected motorcycle
+    await connection.execute(`
+      UPDATE jobOrder
+      SET
+        motorcycleRecordId = ?,
+        repairDate = ?,
+        description = ?,
+        repairStatus = ?
+      WHERE jobOrderId = ?
+    `, [
+      motorcycleRecordId,
+      formattedRepairDate,
+      description || null,
+      repairStatus,
+      jobOrderId
+    ]);
+
+    await connection.commit();
+
+    return {
+      jobOrderId,
+      customerRecordId,
+      motorcycleRecordId
+    };
+  }
+  catch (error) {
+    await connection.rollback();
+    console.error("Update Job Order Service:", error);
+    throw error;
+  }
+  finally {
+    connection.release();
+  }
+}
+
+
+export async function deleteJobOrder(request) {
+  try {
+    const [result] = await pool.execute(`
+      DELETE FROM jobOrder
+      WHERE jobOrderId = ?
+    `, [request.jobOrderId]);
+
+    if (result.affectedRows === 0) {
+      throw new Error("Job order not found.");
+    }
+
+    return {
+      jobOrderId: request.jobOrderId
+    };
+  }
+  catch (error) {
+    console.error("Delete Job Order Service:", error);
+    throw error;
+  }
+}

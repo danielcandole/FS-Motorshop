@@ -1,5 +1,25 @@
 @use "../abstracts/variables" as *;
 
+.jobOrdersTableHeader {
+  tbody {
+    tr {
+      transition: background-color 150ms ease;
+
+      &:hover {
+        background-color: #f3f4f6;
+      }
+    }
+  }
+  border-collapse: collapse;
+  border-spacing: 0;
+
+  th,
+  td {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
 .jobOrderModal {
   box-sizing: border-box;
   width: min(600px, calc(100% - 32px));

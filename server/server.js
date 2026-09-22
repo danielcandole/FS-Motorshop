@@ -4,7 +4,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { handleAuthRoute } from "../backend/api/auth.js";
 import { authenticate } from "../backend/middleware/authenticationMiddleware.js";
-
+import { parseJsonBody } from "../backend/utils/parser.js";
 
 import pool from "../backend/config/database.js";
 
@@ -65,18 +65,6 @@ async function testDatabaseConnection() {
 
     throw error;
   }
-}
-
-async function parseJsonBody(request) {
-  const chunks = [];
-  for await (const chunk of request) {
-    chunks.push(chunk);
-  }
-
-  const body = Buffer.concat(chunks).toString("utf8");
-  if (!body) {return {};}
-
-  return JSON.parse(body);
 }
 
 const server = http.createServer(async (request, response) => {

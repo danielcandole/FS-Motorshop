@@ -165,3 +165,131 @@
     </div>
   </form>
 </dialog>
+
+
+<dialog class="jobOrderModal" id="editJobOrderModal">
+  <form class="jobOrderForm" id="editJobOrderForm">
+    <div class="formPadding">
+      <header class="modalHeader">
+        <div>
+          <h2>Edit Job Order</h2>
+          <p>Update the customer and motorcycle details.</p>
+        </div>
+
+        <button
+          class="modalCloseButton"
+          type="button"
+          id="closeEditJobOrderModal"
+          aria-label="Close modal"
+        >
+          &times;
+        </button>
+      </header>
+
+      <div class="modalBody">
+        <input
+          type="hidden"
+          id="editJobOrderId"
+          name="jobOrderId"
+        >
+
+        <div class="formGroup">
+          <label for="editCustomerName">Customer Name</label>
+          <input
+            type="text"
+            id="editCustomerName"
+            name="customerName"
+            required
+          >
+        </div>
+
+        <div class="formGroup">
+          <label for="editCustomerContactNumber">Contact Number</label>
+          <input
+            type="text"
+            id="editCustomerContactNumber"
+            name="customerContactNumber"
+            required
+          >
+        </div>
+
+        <div class="formGroup">
+          <label for="editMotorcycleName">Motorcycle Name</label>
+          <input
+            type="text"
+            id="editMotorcycleName"
+            name="motorcycleName"
+            required
+          >
+        </div>
+
+        <div class="formGroup">
+          <label for="editMotorcycleModel">Motorcycle Model</label>
+          <input
+            type="text"
+            id="editMotorcycleModel"
+            name="motorcycleModel"
+          >
+        </div>
+
+        <div class="formGroup">
+          <label for="editRepairDate">Repair Date & Time</label>
+          <input
+            type="datetime-local"
+            id="editRepairDate"
+            name="repairDate"
+            required
+          >
+        </div>
+
+        <div class="formGroup">
+          <label for="editDescription">Description</label>
+          <textarea
+            id="editDescription"
+            name="description"
+            rows="4"
+          ></textarea>
+        </div>
+
+        <div class="formGroup">
+          <label for="editRepairStatus">Repair Status</label>
+          <select
+            id="editRepairStatus"
+            name="repairStatus"
+            required
+          >
+            <option value="pending">Pending</option>
+            <option value="in-progress">In Progress</option>
+            <option value="done">Done</option>
+          </select>
+        </div>
+      </div>
+
+      <footer class="modalFooter">
+        <button
+          class="dangerButton"
+          type="button"
+          id="deleteJobOrderButton"
+        >
+          Delete
+        </button>
+
+        <button
+          class="secondaryButton"
+          type="button"
+          id="cancelEditJobOrderButton"
+        >
+          Cancel
+        </button>
+
+        <button
+          class="primaryButton"
+          type="submit"
+          id="saveJobOrderButton"
+        >
+          Save Changes
+        </button>
+      </footer>
+    </div>
+  </form>
+</dialog>

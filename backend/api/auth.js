@@ -1,5 +1,7 @@
 import { login, logout, getLoggedEmployee } from "../controllers/authController.js";
-import { handleCreateJobOrder, handleReadJobOrder } from "../controllers/jobOrderController.js";
+import { handleCreateJobOrder, handleReadJobOrder, handleUpdateJobOrder, handleDeleteJobOrder } from "../controllers/jobOrderController.js";
+
+
 export async function handleAuthRoute(request, response, body) {
   const pathname = new URL(request.url, `http://${request.headers.host}`).pathname;
 console.log("API Request:", request.method, JSON.stringify(pathname));
@@ -18,6 +20,8 @@ console.log("API Request:", request.method, JSON.stringify(pathname));
     return true;
   }
 
+  // JOB ORDERS
+
   if (pathname === "/api/job-orders" && request.method === "POST") {
     request.body = body;
     await handleCreateJobOrder(request, response);
@@ -27,6 +31,21 @@ console.log("API Request:", request.method, JSON.stringify(pathname));
   if (pathname === "/api/job-orders" && request.method === "GET") {
     await handleReadJobOrder(request, response);
     return true;
+  }
+  const jobOrderMatch = pathname.match(/^\/api\/job-orders\/(\d+)$/);
+
+  if (jobOrderMatch) {
+    request.jobOrderId = Number(jobOrderMatch[1]);
+    if (request.method === "PUT") {
+      request.body = body;
+      await handleUpdateJobOrder(request, response);
+      return true;
+    }
+
+    if (request.method === "DELETE") {
+      await handleDeleteJobOrder(request, response);
+      return true;
+    }
   }
 
 

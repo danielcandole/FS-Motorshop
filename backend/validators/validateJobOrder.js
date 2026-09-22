@@ -75,3 +75,28 @@ export function validateJobOrderInput(body) {
     errors: []
   };
 }
+
+
+export function validateJobOrderId(jobOrderId) {
+  const id = Number(jobOrderId);
+
+  if (
+    jobOrderId === undefined ||
+    jobOrderId === null ||
+    String(jobOrderId).trim() === "" ||
+    !Number.isSafeInteger(id) ||
+    id <= 0
+  ) {
+    return {
+      valid: false,
+      error: "Invalid job order ID."
+    };
+  }
+
+  return {
+    valid: true,
+    data: id
+  };
+}
+
+

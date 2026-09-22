@@ -34,3 +34,10 @@ export function dateFormat(value) {
     hour12: true
   });
 }
+
+export function toDateTimeLocalValue(value) {
+  if (!value) {
+    return "";
+  }
+  return String(value).replace(" ", "T").slice(0, 16);
+}

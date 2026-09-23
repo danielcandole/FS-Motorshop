@@ -48,6 +48,13 @@ console.log("API Request:", request.method, JSON.stringify(pathname));
     }
   }
 
+  // EMPLOYEES 
+  if (pathname === "/api/employees" && request.method === "GET") {
+    request.body = body;
+    await handleReadEmployees(request, response);
+    return true;
+  }
+
 
   return false;
 }

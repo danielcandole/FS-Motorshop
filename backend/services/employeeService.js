@@ -1,0 +1,195 @@
+
+import pool from "../config/database.js";
+
+// CREATE EMPLOYEE
+export async function createEmployeeData(request) {
+  try {
+    const {
+      firstName,
+      lastName,
+      email,
+      passwordHash,
+      role,
+      contactNumber,
+      address,
+      accountStatus
+    } = request.validatedEmployee;
+
+    const [result] = await pool.execute(`
+      INSERT INTO employeeAccount (
+        firstName,
+        lastName,
+        email,
+        passwordHash,
+        role,
+        contactNumber,
+        address,
+        accountStatus,
+        createdAt,
+        deletedAt
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, NULL)
+    `, [
+      firstName,
+      lastName,
+      email,
+      passwordHash,
+      role,
+      contactNumber,
+      address,
+      accountStatus
+    ]);
+
+    return {
+      employeeAccountId: result.insertId
+    };
+  }
+  catch (error) {
+    console.error("Create Employee Service:", error);
+    throw error;
+  }
+}
+
+// READ EMPLOYEES
+export async function readEmployeeData() {
+  try {
+    const [employees] = await pool.execute(`
+      SELECT
+        employeeAccountId,
+        firstName,
+        lastName,
+        email,
+        role,
+        contactNumber,
+        address,
+        accountStatus,
+        createdAt,
+        deletedAt
+      FROM employeeAccount
+      WHERE deletedAt IS NULL
+      ORDER BY employeeAccountId DESC
+    `);
+
+    return employees;
+  }
+  catch (error) {
+    console.error("Read Employee Service:", error);
+    throw error;
+  }
+}
+
+// UPDATE EMPLOYEE
+export async function updateEmployeeData(request) {
+  try {
+    const employeeAccountId = request.employeeId;
+
+    const {
+      firstName,
+      lastName,
+      email,
+      passwordHash,
+      role,
+      contactNumber,
+      address,
+      accountStatus
+    } = request.validatedEmployee;
+
+    // Check whether the employee exists and is not deleted.
+    const [employees] = await pool.execute(`
+      SELECT employeeAccountId
+      FROM employeeAccount
+      WHERE employeeAccountId = ?
+        AND deletedAt IS NULL
+      LIMIT 1
+    `, [employeeAccountId]);
+
+    if (employees.length === 0) {
+      throw new Error("Employee not found.");
+    }
+
+    // Update employee without changing the password.
+    if (passwordHash === undefined) {
+      await pool.execute(`
+        UPDATE employeeAccount
+        SET
+          firstName = ?,
+          lastName = ?,
+          email = ?,
+          role = ?,
+          contactNumber = ?,
+          address = ?,
+          accountStatus = ?
+        WHERE employeeAccountId = ?
+          AND deletedAt IS NULL
+      `, [
+        firstName,
+        lastName,
+        email,
+        role,
+        contactNumber,
+        address,
+        accountStatus,
+        employeeAccountId
+      ]);
+    }
+    else {
+      // Update employee including the password.
+      await pool.execute(`
+        UPDATE employeeAccount
+        SET
+          firstName = ?,
+          lastName = ?,
+          email = ?,
+          passwordHash = ?,
+          role = ?,
+          contactNumber = ?,
+          address = ?,
+          accountStatus = ?
+        WHERE employeeAccountId = ?
+          AND deletedAt IS NULL
+      `, [
+        firstName,
+        lastName,
+        email,
+        passwordHash,
+        role,
+        contactNumber,
+        address,
+        accountStatus,
+        employeeAccountId
+      ]);
+    }
+
+    return {
+      employeeAccountId
+    };
+  }
+  catch (error) {
+    console.error("Update Employee Service:", error);
+    throw error;
+  }
+}
+
+// DELETE EMPLOYEE (SOFT DELETE)
+export async function deleteEmployeeData(request) {
+  try {
+    const [result] = await pool.execute(`
+      UPDATE employeeAccount
+      SET deletedAt = CURRENT_TIMESTAMP
+      WHERE employeeAccountId = ?
+        AND deletedAt IS NULL
+    `, [request.employeeId]);
+
+    if (result.affectedRows === 0) {
+      throw new Error("Employee not found.");
+    }
+
+    return {
+      employeeAccountId: request.employeeId
+    };
+  }
+  catch (error) {
+    console.error("Delete Employee Service:", error);
+    throw error;
+  }
+}

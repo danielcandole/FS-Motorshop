@@ -41,3 +41,27 @@ export function toDateTimeLocalValue(value) {
   }
   return String(value).replace(" ", "T").slice(0, 16);
 }
+
+
+export function formatDateTime(value) {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(
+    String(value).replace(" ", "T")
+  );
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return date.toLocaleString("en-US", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true
+  });
+}

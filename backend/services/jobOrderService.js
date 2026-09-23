@@ -1,6 +1,6 @@
 import pool from "../config/database.js";
 
-export async function createJobOrder(request) {
+export async function createJobOrderData(request) {
   const connection = await pool.getConnection();
 
   try {
@@ -108,7 +108,7 @@ export async function createJobOrder(request) {
   }
 }
 
-export async function readJobOrder() {
+export async function readJobOrderData() {
   try {
     const [jobOrders] = await pool.execute(`
       SELECT
@@ -137,7 +137,7 @@ export async function readJobOrder() {
 }
 
 
-export async function updateJobOrder(request) {
+export async function updateJobOrderData(request) {
   const connection = await pool.getConnection();
 
   try {
@@ -277,7 +277,7 @@ export async function updateJobOrder(request) {
 }
 
 
-export async function deleteJobOrder(request) {
+export async function deleteJobOrderData(request) {
   try {
     const [result] = await pool.execute(`
       DELETE FROM jobOrder

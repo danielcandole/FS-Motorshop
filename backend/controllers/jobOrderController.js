@@ -1,12 +1,8 @@
 import { validateJobOrderInput, validateJobOrderId } from "../validators/validateJobOrder.js";
 import { authenticate } from "../middleware/authenticationMiddleware.js";
 import { authorized } from "../middleware/authorizationMiddleware.js";
-import { createJobOrder, readJobOrder, updateJobOrder, deleteJobOrder } from "../services/jobOrderService.js";
-
-function sendJson(response, statusCode, data) {
-  response.writeHead(statusCode, {"Content-Type": "application/json"});
-  response.end(JSON.stringify(data));
-}
+import { createJobOrderData, readJobOrderData, updateJobOrderData, deleteJobOrderData } from "../services/jobOrderService.js";
+import { sendJson } from "../../frontend/js/utils/jsonUtils.js";
 
 export async function handleCreateJobOrder(request, response) {
   const validation = validateJobOrderInput(request.body);
@@ -22,7 +18,7 @@ export async function handleCreateJobOrder(request, response) {
   try {
     if (!await authenticate(request, response)) {return;}
     if (!authorized(request, response, "manager")) {return;}
-    const result = await createJobOrder(request);
+    const result = await createJobOrderData(request);
 
     sendJson(response, 201, {
       message: "Job order created successfully.",
@@ -43,7 +39,7 @@ export async function handleReadJobOrder(request, response) {
     if (!await authenticate(request, response)) {return;}
     if (!authorized(request, response, "manager")) {return;}
 
-    const result = await readJobOrder(request);
+    const result = await readJobOrderData(request);
     
     sendJson(response, 200, {
       message: "Job orders fetched successfully.",
@@ -97,7 +93,7 @@ export async function handleUpdateJobOrder(request, response) {
     }
 
     // 5. Update database
-    const result = await updateJobOrder(request);
+    const result = await updateJobOrderData(request);
 
     sendJson(response, 200, {
       message: "Job order updated successfully.",
@@ -147,7 +143,7 @@ export async function handleDeleteJobOrder(request, response) {
     }
 
     // 4. Delete from database
-    const result = await deleteJobOrder(request);
+    const result = await deleteJobOrderData(request);
 
     sendJson(response, 200, {
       message: "Job order deleted successfully.",

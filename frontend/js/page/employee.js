@@ -1,29 +1,10 @@
 
-function formatDateTime(value) {
-  if (!value) {
-    return "";
-  }
+import { formatDateTime } from "../utils/dateUtils.js";
 
-  const date = new Date(
-    String(value).replace(" ", "T")
-  );
 
-  if (Number.isNaN(date.getTime())) {
-    return String(value);
-  }
 
-  return date.toLocaleString("en-US", {
-    month: "2-digit",
-    day: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true
-  });
-}
-
-// Returns a local datetime string suitable for a datetime-local input.
-// Here, createdAt is stored as a local MySQL DATETIME value.
+// Returns the current local date and time
+// in MySQL DATETIME format.
 function getCurrentDateTime() {
   const now = new Date();
   const offset = now.getTimezoneOffset();
@@ -34,39 +15,51 @@ function getCurrentDateTime() {
     .replace("T", " ");
 }
 
+// DISPLAY ERROR
 function showError(message) {
   alert(message);
 }
 
+// DISPLAY SUCCESS
 function showSuccess(message) {
   alert(message);
 }
 
+// GET EMPLOYEE ROLE
 function getEmployeeRole(employee) {
   return employee?.role || employee?.roleName || "";
 }
 
+// GET EMPLOYEE ID
 function getEmployeeId(employee) {
   return employee.employeeAccountId;
 }
 
+// GET FORM DATA
 function getEmployeeFormData(form) {
   return Object.fromEntries(
     new FormData(form).entries()
   );
 }
 
+// CREATE TABLE CELL
 function createTableCell(value) {
   const cell = document.createElement("td");
-  cell.textContent = value ?? "";
+
+  cell.textContent = value ?? "—";
+
   return cell;
 }
 
+// CREATE EMPLOYEE ROW
 function createEmployeeRow(employee) {
   const row = document.createElement("tr");
 
-  row.classList.add("clickableRow");
+  // Store the ID behind the scenes.
   row.dataset.employeeId = getEmployeeId(employee);
+
+  // Make the entire row clickable.
+  row.classList.add("clickableRow");
   row.tabIndex = 0;
   row.setAttribute("role", "button");
 
@@ -75,22 +68,28 @@ function createEmployeeRow(employee) {
     `Edit employee ${employee.firstName} ${employee.lastName}`
   );
 
-  row.append(
-    createTableCell(employee.firstName),
-    createTableCell(employee.lastName),
-    createTableCell(employee.email),
-    createTableCell(employee.role),
-    createTableCell(employee.contactNumber),
-    createTableCell(employee.address),
-    createTableCell(employee.accountStatus),
-    createTableCell(formatDateTime(employee.createdAt))
-  );
+  const values = [
+    employee.firstName,
+    employee.lastName,
+    employee.email,
+    getEmployeeRole(employee),
+    employee.contactNumber,
+    employee.address,
+    employee.accountStatus,
+    formatDateTime(employee.createdAt)
+  ];
 
+  values.forEach((value) => {
+    row.appendChild(createTableCell(value));
+  });
+
+  // Clicking the row opens the edit dialog.
   row.addEventListener("click", () => {
     openEditEmployee(employee);
   });
 
-  row.addEventListener("keydown", event => {
+  // Keyboard accessibility.
+  row.addEventListener("keydown", (event) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       openEditEmployee(employee);
@@ -100,30 +99,55 @@ function createEmployeeRow(employee) {
   return row;
 }
 
+// LOAD EMPLOYEES
 async function loadEmployees() {
+  const tableBody = document.getElementById(
+    "employeesTableBody"
+  );
+
+  if (!tableBody) {
+    console.error("Employees: Table body was not found.");
+    return;
+  }
+
+  tableBody.innerHTML = `
+    <tr>
+      <td colspan="8">Loading employees...</td>
+    </tr>
+  `;
+
   try {
-    const response = await fetch("/api/employees");
+    const response = await fetch("/api/employees", {
+      method: "GET",
+      credentials: "same-origin"
+    });
 
     const result = await response.json();
 
     if (!response.ok) {
       throw new Error(
-        result.message || "Failed to fetch employees."
+        result.message || "Failed to load employees."
       );
     }
 
     const employees = result.data;
-    const tableBody = document.getElementById(
-      "employeesTableBody"
-    );
-
-    tableBody.replaceChildren();
 
     if (!Array.isArray(employees)) {
       throw new Error("Invalid employee response.");
     }
 
-    employees.forEach(employee => {
+    if (employees.length === 0) {
+      tableBody.innerHTML = `
+        <tr>
+          <td colspan="8">No employees available.</td>
+        </tr>
+      `;
+      return;
+    }
+
+    tableBody.replaceChildren();
+
+    employees.forEach((employee) => {
       tableBody.appendChild(
         createEmployeeRow(employee)
       );
@@ -131,99 +155,204 @@ async function loadEmployees() {
   }
   catch (error) {
     console.error("Load Employees:", error);
+
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="8">Failed to load employees.</td>
+      </tr>
+    `;
+
     showError(error.message || "Failed to load employees.");
   }
 }
 
+// OPEN CREATE DIALOG
 function openCreateEmployee() {
   const form = document.getElementById("employeeForm");
+  const modal = document.getElementById("employeeModal");
+  const createdAt = document.getElementById("createdAt");
+
+  if (!form || !modal || !createdAt) {
+    console.error(
+      "Create Employee: One or more form elements were not found."
+    );
+    return;
+  }
 
   form.reset();
 
-  // Automatically set createdAt when opening the create dialog.
-  document.getElementById("createdAt").value =
-    getCurrentDateTime();
+  // Automatically set createdAt.
+  createdAt.value = getCurrentDateTime();
 
-  document.getElementById("employeeModal").showModal();
+  if (!modal.open) {
+    modal.showModal();
+  }
 }
 
+// OPEN EDIT DIALOG
 function openEditEmployee(employee) {
   const modal = document.getElementById(
     "editEmployeeModal"
   );
 
-  document.getElementById("editEmployeeId").value =
-    getEmployeeId(employee);
+  const employeeId = document.getElementById(
+    "editEmployeeId"
+  );
 
-  document.getElementById("editFirstName").value =
-    employee.firstName ?? "";
+  const firstName = document.getElementById(
+    "editFirstName"
+  );
 
-  document.getElementById("editLastName").value =
-    employee.lastName ?? "";
+  const lastName = document.getElementById(
+    "editLastName"
+  );
 
-  document.getElementById("editEmail").value =
-    employee.email ?? "";
+  const email = document.getElementById(
+    "editEmail"
+  );
 
-  document.getElementById("editRole").value =
-    employee.role ?? "";
+  const role = document.getElementById(
+    "editRole"
+  );
 
-  document.getElementById("editContactNumber").value =
-    employee.contactNumber ?? "";
+  const contactNumber = document.getElementById(
+    "editContactNumber"
+  );
 
-  document.getElementById("editAddress").value =
-    employee.address ?? "";
+  const address = document.getElementById(
+    "editAddress"
+  );
 
-  document.getElementById("editAccountStatus").value =
-    employee.accountStatus ?? "";
+  const accountStatus = document.getElementById(
+    "editAccountStatus"
+  );
 
-  document.getElementById("editCreatedAt").value =
-    employee.createdAt ?? "";
+  const createdAt = document.getElementById(
+    "editCreatedAt"
+  );
 
-  // Clear password whenever a different employee is opened.
-  document.getElementById("editPasswordHash").value = "";
+  const passwordHash = document.getElementById(
+    "editPasswordHash"
+  );
 
-  modal.showModal();
+  if (
+    !modal ||
+    !employeeId ||
+    !firstName ||
+    !lastName ||
+    !email ||
+    !role ||
+    !contactNumber ||
+    !address ||
+    !accountStatus ||
+    !createdAt ||
+    !passwordHash
+  ) {
+    console.error(
+      "Edit Employee: One or more form elements were not found."
+    );
+    return;
+  }
+
+  employeeId.value = getEmployeeId(employee);
+  firstName.value = employee.firstName ?? "";
+  lastName.value = employee.lastName ?? "";
+  email.value = employee.email ?? "";
+  role.value = getEmployeeRole(employee);
+  contactNumber.value = employee.contactNumber ?? "";
+  address.value = employee.address ?? "";
+  accountStatus.value = employee.accountStatus ?? "";
+  createdAt.value = employee.createdAt ?? "";
+
+  // Never prefill the password field.
+  passwordHash.value = "";
+
+  if (!modal.open) {
+    modal.showModal();
+  }
 }
 
+// CLOSE DIALOG
 function closeDialog(dialogId) {
-  document.getElementById(dialogId).close();
+  const modal = document.getElementById(dialogId);
+
+  if (!modal) {
+    console.error(
+      `Close Dialog: ${dialogId} was not found.`
+    );
+    return;
+  }
+
+  modal.close();
 }
 
+// CONFIGURE ROLE PERMISSIONS
 function configureRolePermissions(role) {
   const isManager = role === "manager";
+
   const canManageEmployees =
-    role === "manager" || role === "assistant manager";
+    role === "manager" ||
+    role === "assistant manager";
 
-  // Create employee permissions
-  document.getElementById(
+  const createButton = document.getElementById(
     "createEmployeeButton"
-  ).hidden = !canManageEmployees;
+  );
 
-  document.getElementById(
+  const createPasswordGroup = document.getElementById(
     "createPasswordGroup"
-  ).hidden = !canManageEmployees;
+  );
 
-  document.getElementById(
+  const passwordHash = document.getElementById(
     "passwordHash"
-  ).required = canManageEmployees;
+  );
 
-  // Edit employee permissions
-  document.getElementById(
+  const editPasswordGroup = document.getElementById(
     "editPasswordGroup"
-  ).hidden = !isManager;
+  );
 
-  document.getElementById(
+  const editPasswordHash = document.getElementById(
     "editPasswordHash"
-  ).disabled = !isManager;
+  );
+
+  const deleteButton = document.getElementById(
+    "deleteEmployeeButton"
+  );
+
+  if (
+    !createButton ||
+    !createPasswordGroup ||
+    !passwordHash ||
+    !editPasswordGroup ||
+    !editPasswordHash ||
+    !deleteButton
+  ) {
+    console.error(
+      "Employee Permissions: One or more elements were not found."
+    );
+    return;
+  }
+
+  // Create employee permissions.
+  createButton.hidden = !canManageEmployees;
+  createPasswordGroup.hidden = !canManageEmployees;
+
+  // Creating an employee requires a password.
+  passwordHash.required = canManageEmployees;
+
+  // Edit employee permissions.
+  editPasswordGroup.hidden = !isManager;
+  editPasswordHash.disabled = !isManager;
 
   // Only managers can delete employees.
-  document.getElementById(
-    "deleteEmployeeButton"
-  ).hidden = !isManager;
+  deleteButton.hidden = !isManager;
 }
 
+// LOAD LOGGED-IN EMPLOYEE
 async function loadLoggedEmployee() {
-  const response = await fetch("/api/auth/me");
+  const response = await fetch("/api/auth/me", {
+    method: "GET",
+    credentials: "same-origin"
+  });
 
   const result = await response.json();
 
@@ -236,6 +365,7 @@ async function loadLoggedEmployee() {
   return result.data ?? result.employee ?? result;
 }
 
+// CREATE EMPLOYEE
 async function createEmployee(event) {
   event.preventDefault();
 
@@ -251,6 +381,7 @@ async function createEmployee(event) {
       headers: {
         "Content-Type": "application/json"
       },
+      credentials: "same-origin",
       body: JSON.stringify(data)
     });
 
@@ -271,19 +402,29 @@ async function createEmployee(event) {
   }
   catch (error) {
     console.error("Create Employee:", error);
-    showError(error.message || "Failed to create employee.");
+
+    showError(
+      error.message || "Failed to create employee."
+    );
   }
 }
 
+// UPDATE EMPLOYEE
 async function updateEmployee(event) {
   event.preventDefault();
 
   const form = event.currentTarget;
+
   const employeeId = document.getElementById(
     "editEmployeeId"
   ).value;
 
   const data = getEmployeeFormData(form);
+
+  // Preserve the original createdAt value.
+  data.createdAt = document.getElementById(
+    "editCreatedAt"
+  ).value;
 
   // Do not submit an empty password.
   // An empty password means keep the existing password.
@@ -291,10 +432,10 @@ async function updateEmployee(event) {
     delete data.passwordHash;
   }
 
-  // Preserve original createdAt.
-  data.createdAt = document.getElementById(
-    "editCreatedAt"
-  ).value;
+  // Assistant managers must not change passwords.
+  if (currentEmployeeRole !== "manager") {
+    delete data.passwordHash;
+  }
 
   try {
     const response = await fetch(
@@ -304,6 +445,7 @@ async function updateEmployee(event) {
         headers: {
           "Content-Type": "application/json"
         },
+        credentials: "same-origin",
         body: JSON.stringify(data)
       }
     );
@@ -324,14 +466,23 @@ async function updateEmployee(event) {
   }
   catch (error) {
     console.error("Update Employee:", error);
-    showError(error.message || "Failed to update employee.");
+
+    showError(
+      error.message || "Failed to update employee."
+    );
   }
 }
 
+// DELETE EMPLOYEE
 async function deleteEmployee() {
   const employeeId = document.getElementById(
     "editEmployeeId"
   ).value;
+
+  if (!employeeId) {
+    showError("No employee was selected.");
+    return;
+  }
 
   const confirmed = confirm(
     "Are you sure you want to delete this employee?"
@@ -345,7 +496,8 @@ async function deleteEmployee() {
     const response = await fetch(
       `/api/employees/${employeeId}`,
       {
-        method: "DELETE"
+        method: "DELETE",
+        credentials: "same-origin"
       }
     );
 
@@ -365,10 +517,17 @@ async function deleteEmployee() {
   }
   catch (error) {
     console.error("Delete Employee:", error);
-    showError(error.message || "Failed to delete employee.");
+
+    showError(
+      error.message || "Failed to delete employee."
+    );
   }
 }
 
+// CURRENT LOGGED-IN EMPLOYEE ROLE
+let currentEmployeeRole = "";
+
+// INITIALIZE EMPLOYEES PAGE
 export async function initEmployeesPage() {
   const employeeModal = document.getElementById(
     "employeeModal"
@@ -386,84 +545,111 @@ export async function initEmployeesPage() {
     "editEmployeeForm"
   );
 
+  const createButton = document.getElementById(
+    "createEmployeeButton"
+  );
+
+  const closeButton = document.getElementById(
+    "closeEmployeeModal"
+  );
+
+  const cancelButton = document.getElementById(
+    "cancelEmployeeButton"
+  );
+
+  const closeEditButton = document.getElementById(
+    "closeEditEmployeeModal"
+  );
+
+  const cancelEditButton = document.getElementById(
+    "cancelEditEmployeeButton"
+  );
+
+  const deleteButton = document.getElementById(
+    "deleteEmployeeButton"
+  );
+
   const requiredElements = [
     employeeModal,
     editEmployeeModal,
     employeeForm,
     editEmployeeForm,
     document.getElementById("employeesTableBody"),
-    document.getElementById("createEmployeeButton"),
-    document.getElementById("deleteEmployeeButton")
+    createButton,
+    closeButton,
+    cancelButton,
+    closeEditButton,
+    cancelEditButton,
+    deleteButton
   ];
 
-  if (requiredElements.some(element => !element)) {
+  if (requiredElements.some((element) => !element)) {
     console.error(
-      "Employee page initialization failed: missing HTML elements."
+      "Employees: One or more required HTML elements were not found."
     );
-
     return;
   }
 
   try {
     const loggedEmployee = await loadLoggedEmployee();
 
-    const role = getEmployeeRole(loggedEmployee);
+    currentEmployeeRole = getEmployeeRole(loggedEmployee);
 
-    configureRolePermissions(role);
+    // Configure the interface based on the logged-in role.
+    configureRolePermissions(currentEmployeeRole);
 
     // Only managers and assistant managers may access this page.
     if (
-      role !== "manager" &&
-      role !== "assistant manager"
+      currentEmployeeRole !== "manager" &&
+      currentEmployeeRole !== "assistant manager"
     ) {
-      showError("You are not authorized to access employees.");
-
+      showError(
+        "You are not authorized to access employees."
+      );
       return;
     }
 
     await loadEmployees();
 
-    document.getElementById(
-      "createEmployeeButton"
-    ).addEventListener("click", openCreateEmployee);
+    // CREATE DIALOG
+    createButton.addEventListener("click", () => {
+      openCreateEmployee();
+    });
 
-    document.getElementById(
-      "closeEmployeeModal"
-    ).addEventListener("click", () => {
+    closeButton.addEventListener("click", () => {
       closeDialog("employeeModal");
     });
 
-    document.getElementById(
-      "cancelEmployeeButton"
-    ).addEventListener("click", () => {
+    cancelButton.addEventListener("click", () => {
       closeDialog("employeeModal");
     });
 
-    document.getElementById(
-      "closeEditEmployeeModal"
-    ).addEventListener("click", () => {
+    // EDIT DIALOG
+    closeEditButton.addEventListener("click", () => {
       closeDialog("editEmployeeModal");
     });
 
-    document.getElementById(
-      "cancelEditEmployeeButton"
-    ).addEventListener("click", () => {
+    cancelEditButton.addEventListener("click", () => {
       closeDialog("editEmployeeModal");
     });
 
+    // CREATE EMPLOYEE
     employeeForm.addEventListener(
       "submit",
       createEmployee
     );
 
+    // UPDATE EMPLOYEE
     editEmployeeForm.addEventListener(
       "submit",
       updateEmployee
     );
 
-    document.getElementById(
-      "deleteEmployeeButton"
-    ).addEventListener("click", deleteEmployee);
+    // DELETE EMPLOYEE
+    deleteButton.addEventListener(
+      "click",
+      deleteEmployee
+    );
   }
   catch (error) {
     console.error("Initialize Employees:", error);

@@ -1,6 +1,9 @@
 import { initLoginForm } from "../auth/login.js";
 import { initLogoutBtn } from "../auth/logout.js";
 import { initJobOrdersPage } from "./jobOrder.js";
+import { initEmployeesPage } from "./employee.js";
+
+
 const routes = {
   "/login": "/auth/login.html",
   "/dashboard": "/page/dashboard.html",
@@ -110,30 +113,37 @@ export async function navigate() {
   const route = getRoute();
   const sidebar = document.getElementById("sidebar");
 
-
-
   try {
     if (route === "/login") {
-        if (sidebar) {
-          sidebar.innerHTML = "";
-          sidebar.style.display = "none";
-        }
-    } else {
-
-      if (!await getCurrentEmployee()) { 
+      if (sidebar) {
+        sidebar.innerHTML = "";
+        sidebar.style.display = "none";
+      }
+    }
+    else {
+      if (!await getCurrentEmployee()) {
         window.location.hash = "/login";
         return;
       }
 
-      if (sidebar) { sidebar.style.display = ""; }
+      if (sidebar) {
+        sidebar.style.display = "";
+      }
 
       await loadComponent("sidebar", "/component/sidebar.html");
       initLogoutBtn();
     }
 
     await loadPage(route);
-  } catch (error) {
+
+    // Initialize the employee page after its HTML is loaded.
+    if (route === "/employee") {
+      await initEmployeesPage();
+    }
+  }
+  catch (error) {
     console.error("Page Router navigation failed:", error);
   }
 }
+
 window.addEventListener("hashchange", navigate);

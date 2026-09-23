@@ -1,0 +1,125 @@
+
+.employeesPage {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.employeesSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.employeesTable {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+
+  th,
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e5e7eb;
+    white-space: nowrap;
+  }
+
+  th {
+    font-weight: 600;
+  }
+}
+
+.clickableRow {
+  cursor: pointer;
+
+  &:hover {
+    background-color: #f0f0f0;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: -2px;
+  }
+}
+
+.employeeModal {
+  width: min(600px, calc(100% - 32px));
+  max-width: 600px;
+  max-height: 90vh;
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  overflow: auto;
+
+  &::backdrop {
+    background: rgb(0 0 0 / 50%);
+  }
+}
+
+.employeeForm {
+  width: 100%;
+}
+
+.formPadding {
+  padding: 24px;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+
+  h2 {
+    margin: 0 0 8px;
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  label {
+    font-weight: 500;
+  }
+
+  input,
+  select,
+  textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    font: inherit;
+  }
+
+  textarea {
+    resize: vertical;
+  }
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.modalFooter #deleteEmployeeButton {
+  margin-right: auto;
+}
+
+[hidden] {
+  display: none !important;
+}

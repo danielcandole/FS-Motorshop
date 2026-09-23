@@ -1,1 +1,349 @@
-<h1>employee</h1>
+
+<section class="employeesPage" aria-labelledby="employeesTitle">
+  <header class="pageHeader">
+    <div class="pageHeaderContent">
+      <h1 id="employeesTitle">Employees</h1>
+      <p>Manage employee accounts and information.</p>
+    </div>
+
+    <button
+      class="primaryButton"
+      type="button"
+      id="createEmployeeButton"
+    >
+      Create
+    </button>
+  </header>
+
+  <section
+    class="employeesSection"
+    aria-labelledby="employeesListTitle"
+  >
+    <header class="sectionHeader">
+      <h2 id="employeesListTitle">All Employees</h2>
+    </header>
+
+    <div class="tableContainer">
+      <table class="employeesTable">
+        <thead>
+          <tr>
+            <th scope="col">First Name</th>
+            <th scope="col">Last Name</th>
+            <th scope="col">Email</th>
+            <th scope="col">Role</th>
+            <th scope="col">Contact Number</th>
+            <th scope="col">Address</th>
+            <th scope="col">Account Status</th>
+            <th scope="col">Created At</th>
+          </tr>
+        </thead>
+
+        <tbody id="employeesTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+</section>
+
+<!-- CREATE EMPLOYEE DIALOG -->
+<dialog class="employeeModal" id="employeeModal">
+  <form class="employeeForm" id="employeeForm">
+    <div class="formPadding">
+      <header class="modalHeader">
+        <div>
+          <h2>Create Employee</h2>
+          <p>Enter the employee account details.</p>
+        </div>
+
+        <button
+          class="modalCloseButton"
+          type="button"
+          id="closeEmployeeModal"
+          aria-label="Close modal"
+        >
+          &times;
+        </button>
+      </header>
+
+      <div class="modalBody">
+        <div class="formGroup">
+          <label for="firstName">First Name</label>
+          <input
+            type="text"
+            id="firstName"
+            name="firstName"
+            placeholder="Enter first name"
+            required
+          >
+        </div>
+
+        <div class="formGroup">
+          <label for="lastName">Last Name</label>
+          <input
+            type="text"
+            id="lastName"
+            name="lastName"
+            placeholder="Enter last name"
+            required
+          >
+        </div>
+
+        <div class="formGroup">
+          <label for="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            placeholder="Enter email address"
+            required
+          >
+        </div>
+
+        <div class="formGroup" id="createPasswordGroup">
+          <label for="passwordHash">Password</label>
+          <input
+            type="password"
+            id="passwordHash"
+            name="passwordHash"
+            placeholder="Enter password"
+            autocomplete="new-password"
+            required
+          >
+        </div>
+
+        <div class="formGroup">
+          <label for="role">Role</label>
+          <select id="role" name="role" required>
+            <option value="manager">Manager</option>
+            <option value="assistant manager">
+              Assistant Manager
+            </option>
+            <option value="staff">Staff</option>
+          </select>
+        </div>
+
+        <div class="formGroup">
+          <label for="contactNumber">Contact Number</label>
+          <input
+            type="text"
+            id="contactNumber"
+            name="contactNumber"
+            placeholder="Enter contact number"
+            required
+          >
+        </div>
+
+        <div class="formGroup">
+          <label for="address">Address</label>
+          <textarea
+            id="address"
+            name="address"
+            rows="3"
+            placeholder="Enter address"
+            required
+          ></textarea>
+        </div>
+
+        <div class="formGroup">
+          <label for="accountStatus">Account Status</label>
+          <select
+            id="accountStatus"
+            name="accountStatus"
+            required
+          >
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+
+        <!-- Automatically populated by JavaScript -->
+        <input
+          type="hidden"
+          id="createdAt"
+          name="createdAt"
+        >
+      </div>
+
+      <footer class="modalFooter">
+        <button
+          class="secondaryButton"
+          type="button"
+          id="cancelEmployeeButton"
+        >
+          Cancel
+        </button>
+
+        <button
+          class="primaryButton"
+          type="submit"
+          id="submitEmployeeButton"
+        >
+          Create
+        </button>
+      </footer>
+    </div>
+  </form>
+</dialog>
+
+<!-- EDIT EMPLOYEE DIALOG -->
+<dialog class="employeeModal" id="editEmployeeModal">
+  <form class="employeeForm" id="editEmployeeForm">
+    <div class="formPadding">
+      <header class="modalHeader">
+        <div>
+          <h2>Edit Employee</h2>
+          <p>Update the employee account details.</p>
+        </div>
+
+        <button
+          class="modalCloseButton"
+          type="button"
+          id="closeEditEmployeeModal"
+          aria-label="Close modal"
+        >
+          &times;
+        </button>
+      </header>
+
+      <div class="modalBody">
+        <input
+          type="hidden"
+          id="editEmployeeId"
+          name="employeeAccountId"
+        >
+
+        <div class="formGroup">
+          <label for="editFirstName">First Name</label>
+          <input
+            type="text"
+            id="editFirstName"
+            name="firstName"
+            required
+          >
+        </div>
+
+        <div class="formGroup">
+          <label for="editLastName">Last Name</label>
+          <input
+            type="text"
+            id="editLastName"
+            name="lastName"
+            required
+          >
+        </div>
+
+        <div class="formGroup">
+          <label for="editEmail">Email</label>
+          <input
+            type="email"
+            id="editEmail"
+            name="email"
+            required
+          >
+        </div>
+
+        <!-- Manager-only password field -->
+        <div
+          class="formGroup"
+          id="editPasswordGroup"
+          hidden
+        >
+          <label for="editPasswordHash">
+            New Password
+          </label>
+
+          <input
+            type="password"
+            id="editPasswordHash"
+            name="passwordHash"
+            placeholder="Leave blank to keep current password"
+            autocomplete="new-password"
+          >
+        </div>
+
+        <div class="formGroup">
+          <label for="editRole">Role</label>
+          <select
+            id="editRole"
+            name="role"
+            required
+          >
+            <option value="manager">Manager</option>
+            <option value="assistant manager">
+              Assistant Manager
+            </option>
+            <option value="staff">Staff</option>
+          </select>
+        </div>
+
+        <div class="formGroup">
+          <label for="editContactNumber">
+            Contact Number
+          </label>
+          <input
+            type="text"
+            id="editContactNumber"
+            name="contactNumber"
+            required
+          >
+        </div>
+
+        <div class="formGroup">
+          <label for="editAddress">Address</label>
+          <textarea
+            id="editAddress"
+            name="address"
+            rows="3"
+            required
+          ></textarea>
+        </div>
+
+        <div class="formGroup">
+          <label for="editAccountStatus">
+            Account Status
+          </label>
+          <select
+            id="editAccountStatus"
+            name="accountStatus"
+            required
+          >
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+
+        <!-- Original createdAt is preserved, not edited -->
+        <input
+          type="hidden"
+          id="editCreatedAt"
+          name="createdAt"
+        >
+      </div>
+
+      <footer class="modalFooter">
+        <button
+          class="dangerButton"
+          type="button"
+          id="deleteEmployeeButton"
+        >
+          Delete
+        </button>
+
+        <button
+          class="secondaryButton"
+          type="button"
+          id="cancelEditEmployeeButton"
+        >
+          Cancel
+        </button>
+
+        <button
+          class="primaryButton"
+          type="submit"
+          id="saveEmployeeButton"
+        >
+          Save Changes
+        </button>
+      </footer>
+    </div>
+  </form>
+</dialog>

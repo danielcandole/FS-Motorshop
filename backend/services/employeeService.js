@@ -1,5 +1,34 @@
-
+import bcrypt from "bcrypt";
 import pool from "../config/database.js";
+
+const BCRYPT_SALT_ROUNDS = 12;
+
+
+// GET TARGET EMPLOYEE AUTHORIZATION DATA
+export async function getEmployeeAuthorizationData(employeeId) {
+  try {
+    const [employees] = await pool.execute(`
+      SELECT
+        employeeAccountId,
+        role
+      FROM employeeAccount
+      WHERE employeeAccountId = ?
+        AND deletedAt IS NULL
+      LIMIT 1
+    `, [employeeId]);
+
+    if (employees.length === 0) {
+      throw new Error("Employee not found.");
+    }
+
+    return employees[0];
+  }
+  catch (error) {
+    console.error("Get Employee Authorization Service:", error);
+    throw error;
+  }
+}
+
 
 // CREATE EMPLOYEE
 export async function createEmployeeData(request) {
@@ -8,12 +37,17 @@ export async function createEmployeeData(request) {
       firstName,
       lastName,
       email,
-      passwordHash,
+      password,
       role,
       contactNumber,
       address,
       accountStatus
     } = request.validatedEmployee;
+
+    const passwordHash = await bcrypt.hash(
+      password,
+      BCRYPT_SALT_ROUNDS
+    );
 
     const [result] = await pool.execute(`
       INSERT INTO employeeAccount (
@@ -50,6 +84,7 @@ export async function createEmployeeData(request) {
   }
 }
 
+
 // READ EMPLOYEES
 export async function readEmployeeData() {
   try {
@@ -78,6 +113,7 @@ export async function readEmployeeData() {
   }
 }
 
+
 // UPDATE EMPLOYEE
 export async function updateEmployeeData(request) {
   try {
@@ -87,16 +123,17 @@ export async function updateEmployeeData(request) {
       firstName,
       lastName,
       email,
-      passwordHash,
-      role,
+      password,
       contactNumber,
       address,
       accountStatus
     } = request.validatedEmployee;
 
-    // Check whether the employee exists and is not deleted.
+    // Verify that the target employee still exists
+    // and has not been soft deleted.
     const [employees] = await pool.execute(`
-      SELECT employeeAccountId
+      SELECT
+        employeeAccountId
       FROM employeeAccount
       WHERE employeeAccountId = ?
         AND deletedAt IS NULL
@@ -108,14 +145,13 @@ export async function updateEmployeeData(request) {
     }
 
     // Update employee without changing the password.
-    if (passwordHash === undefined) {
+    if (password === undefined) {
       await pool.execute(`
         UPDATE employeeAccount
         SET
           firstName = ?,
           lastName = ?,
           email = ?,
-          role = ?,
           contactNumber = ?,
           address = ?,
           accountStatus = ?
@@ -125,7 +161,6 @@ export async function updateEmployeeData(request) {
         firstName,
         lastName,
         email,
-        role,
         contactNumber,
         address,
         accountStatus,
@@ -133,7 +168,11 @@ export async function updateEmployeeData(request) {
       ]);
     }
     else {
-      // Update employee including the password.
+      const passwordHash = await bcrypt.hash(
+        password,
+        BCRYPT_SALT_ROUNDS
+      );
+
       await pool.execute(`
         UPDATE employeeAccount
         SET
@@ -141,7 +180,6 @@ export async function updateEmployeeData(request) {
           lastName = ?,
           email = ?,
           passwordHash = ?,
-          role = ?,
           contactNumber = ?,
           address = ?,
           accountStatus = ?
@@ -152,7 +190,6 @@ export async function updateEmployeeData(request) {
         lastName,
         email,
         passwordHash,
-        role,
         contactNumber,
         address,
         accountStatus,
@@ -170,7 +207,8 @@ export async function updateEmployeeData(request) {
   }
 }
 
-// DELETE EMPLOYEE (SOFT DELETE)
+
+// DELETE EMPLOYEE
 export async function deleteEmployeeData(request) {
   try {
     const [result] = await pool.execute(`

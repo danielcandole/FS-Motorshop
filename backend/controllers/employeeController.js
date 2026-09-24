@@ -54,18 +54,11 @@ export async function handleCreateEmployee(request, response) {
 
     // Reject unsupported roles.
     if (!employeeRoles.includes(request.validatedEmployee.role)) {
-      sendValidationError(response, [
-        "Invalid employee role."
-      ]);
+      sendValidationError(response, ["Invalid employee role."]);
       return;
     }
-
     const data = await createEmployeeData(request);
-
-    sendJson(response, 201, {
-      message: "Employee created successfully.",
-      data
-    });
+    sendJson(response, 201, {message: "Employee created successfully.", data});
   }
   catch (error) {
     console.error("Create Employee Controller:", error);
@@ -81,58 +74,33 @@ export async function handleCreateEmployee(request, response) {
 export async function handleReadEmployee(request, response) {
   try {
     const employee = await authenticate(request, response);
-
-    if (!employee) {
-      return;
-    }
-
-    if (
-      !authorized(
-        request,
-        response,
-        "admin",
-        "manager",
-        "assistant manager"
-      )
-    ) {
-      return;
-    }
+    if (!employee) {return;}
+    if (!authorized(request, response, "admin", "manager", "assistant manager")) {return;}
 
     const data = await readEmployeeData();
 
-    sendJson(response, 200, {
-      message: "Employees retrieved successfully.",
-      data
-    });
+    sendJson(response, 200, {message: "Employees retrieved successfully.", data});
   }
   catch (error) {
     console.error("Read Employee Controller:", error);
 
-    sendJson(response, 500, {
-      message: "Internal server error."
-    });
+    sendJson(response, 500, {message: "Internal server error."});
   }
 }
 
 
 // UPDATE EMPLOYEE
 export async function handleUpdateEmployee(request, response) {
-  const idValidation = validateEmployeeId(
-    request.employeeId
-  );
+  const idValidation = validateEmployeeId(request.employeeId);
 
   if (!idValidation.valid) {
-    sendJson(response, 400, {
-      message: idValidation.error
-    });
+    sendJson(response, 400, {message: idValidation.error});
     return;
   }
 
   request.employeeId = idValidation.data;
 
-  const validation = validateEmployeeUpdateInput(
-    request.body
-  );
+  const validation = validateEmployeeUpdateInput(request.body);
 
   if (!validation.valid) {
     sendValidationError(response, validation.errors);
@@ -143,22 +111,8 @@ export async function handleUpdateEmployee(request, response) {
 
   try {
     const employee = await authenticate(request, response);
-
-    if (!employee) {
-      return;
-    }
-
-    if (
-      !authorized(
-        request,
-        response,
-        "admin",
-        "manager",
-        "assistant manager"
-      )
-    ) {
-      return;
-    }
+    if (!employee) {return;}
+    if (!authorized(request, response, "admin", "manager", "assistant manager")) {return;}
 
     const requesterId = employee.employeeAccountId;
     const targetId = request.employeeId;
@@ -169,11 +123,8 @@ export async function handleUpdateEmployee(request, response) {
       sendForbidden(response);
       return;
     }
-
     // Get the target role directly from the database.
-    const targetEmployee = await getEmployeeAuthorizationData(
-      targetId
-    );
+    const targetEmployee = await getEmployeeAuthorizationData(targetId);
 
     // Apply the target-role hierarchy.
     if (

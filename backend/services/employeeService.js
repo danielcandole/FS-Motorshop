@@ -3,21 +3,44 @@ import pool from "../config/database.js";
 
 const BCRYPT_SALT_ROUNDS = 12;
 
-
 // CREATE EMPLOYEE
 export async function createEmployeeData(request) {
   try {
-    const {firstName, lastName, email, password, role, contactNumber, address, accountStatus} = request.validatedEmployee;
+    const {
+      firstName,
+      lastName,
+      email,
+      password,
+      roleId,
+      contactNumber,
+      address
+    } = request.validatedEmployee;
 
     const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 
     const [result] = await pool.execute(`
       INSERT INTO employeeAccount (
-        firstName, lastName, email, passwordHash, role, contactNumber, address, accountStatus, createdAt, deletedAt
+        firstName,
+        lastName,
+        email,
+        passwordHash,
+        roleId,
+        contactNumber,
+        address,
+        accountStatus,
+        createdAt,
+        deletedAt
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, NULL)
-    `, [firstName, lastName, email, passwordHash, role, contactNumber, address, accountStatus]
-    );
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'active', CURRENT_TIMESTAMP, NULL)
+    `, [
+      firstName,
+      lastName,
+      email,
+      passwordHash,
+      roleId,
+      contactNumber,
+      address
+    ]);
 
     return {employeeAccountId: result.insertId};
   }
@@ -27,16 +50,26 @@ export async function createEmployeeData(request) {
   }
 }
 
-
 // READ EMPLOYEES
 export async function readEmployeeData() {
   try {
     const [employees] = await pool.execute(`
-      SELECT employeeAccountId, firstName, lastName, email, role, contactNumber, address, accountStatus, createdAt, deletedAt
+      SELECT
+        employeeAccountId,
+        firstName,
+        lastName,
+        email,
+        roleId,
+        contactNumber,
+        address,
+        accountStatus,
+        createdAt,
+        deletedAt
       FROM employeeAccount
       WHERE deletedAt IS NULL
       ORDER BY employeeAccountId DESC
     `);
+
     return employees;
   }
   catch (error) {
@@ -45,13 +78,19 @@ export async function readEmployeeData() {
   }
 }
 
-
 // UPDATE EMPLOYEE
 export async function updateEmployeeData(request) {
   try {
     const employeeAccountId = request.employeeId;
-
-    const {firstName, lastName, email, password, contactNumber, address, accountStatus} = request.validatedEmployee;
+    const actorRole = request.actorRole;
+    
+    const {
+      firstName,
+      lastName,
+      email,
+      contactNumber,
+      address
+    } = request.validatedEmployee;
 
     // Verify that the target employee still exists
     // and has not been soft deleted.
@@ -68,40 +107,25 @@ export async function updateEmployeeData(request) {
       throw new Error("Employee not found.");
     }
 
-    // Update employee without changing the password.
-    if (password === undefined) {
-      await pool.execute(`
-        UPDATE employeeAccount
-        SET
-          firstName = ?,
-          lastName = ?,
-          email = ?,
-          contactNumber = ?,
-          address = ?,
-          accountStatus = ?
-        WHERE employeeAccountId = ?
-          AND deletedAt IS NULL
-        `, [firstName, lastName, email, contactNumber, address, accountStatus, employeeAccountId]
-      );
-    }
-    else {
-      const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
+    await pool.execute(`
+      UPDATE employeeAccount
+      SET
+        firstName = ?,
+        lastName = ?,
+        email = ?,
+        contactNumber = ?,
+        address = ?,
+      WHERE employeeAccountId = ?
+        AND deletedAt IS NULL
+    `, [
+      firstName,
+      lastName,
+      email,
+      contactNumber,
+      address,
+      employeeAccountId
+    ]);
 
-      await pool.execute(`
-        UPDATE employeeAccount
-        SET
-          firstName = ?,
-          lastName = ?,
-          email = ?,
-          passwordHash = ?,
-          contactNumber = ?,
-          address = ?,
-          accountStatus = ?
-        WHERE employeeAccountId = ?
-          AND deletedAt IS NULL
-        `, [firstName, lastName, email, passwordHash, contactNumber, address, accountStatus, employeeAccountId]
-      );
-    }
     return {employeeAccountId};
   }
   catch (error) {
@@ -109,7 +133,6 @@ export async function updateEmployeeData(request) {
     throw error;
   }
 }
-
 
 // DELETE EMPLOYEE
 export async function deleteEmployeeData(request) {
@@ -125,9 +148,7 @@ export async function deleteEmployeeData(request) {
       throw new Error("Employee not found.");
     }
 
-    return {
-      employeeAccountId: request.employeeId
-    };
+    return {employeeAccountId: request.employeeId};
   }
   catch (error) {
     console.error("Delete Employee Service:", error);

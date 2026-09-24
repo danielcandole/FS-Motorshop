@@ -27,7 +27,7 @@ export async function login(request, response, body) {
   const {sessionToken, csrfToken} = await createSession(employee.employeeAccountId);
 
   response.setHeader("Set-Cookie", [
-    `sessionToken=${sessionToken}; HttpOnly; SameSite=Strict; Path=/`,
+    `sessionToken=${sessionToken}; HttpOnly; Secure; SameSite=Strict; Path=/`,
     `csrfToken=${csrfToken}; SameSite=Strict; Path=/`
   ]);
 

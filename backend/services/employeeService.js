@@ -9,27 +9,17 @@ export async function createEmployeeData(request) {
   try {
     const {firstName, lastName, email, password, role, contactNumber, address, accountStatus} = request.validatedEmployee;
 
-const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
+    const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 
     const [result] = await pool.execute(`
       INSERT INTO employeeAccount (
         firstName, lastName, email, passwordHash, role, contactNumber, address, accountStatus, createdAt, deletedAt
       )
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, NULL)
-    `, [
-      firstName,
-      lastName,
-      email,
-      passwordHash,
-      role,
-      contactNumber,
-      address,
-      accountStatus
-    ]);
+    `, [firstName, lastName, email, passwordHash, role, contactNumber, address, accountStatus]
+    );
 
-    return {
-      employeeAccountId: result.insertId
-    };
+    return {employeeAccountId: result.insertId};
   }
   catch (error) {
     console.error("Create Employee Service:", error);
@@ -42,22 +32,11 @@ const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 export async function readEmployeeData() {
   try {
     const [employees] = await pool.execute(`
-      SELECT
-        employeeAccountId,
-        firstName,
-        lastName,
-        email,
-        role,
-        contactNumber,
-        address,
-        accountStatus,
-        createdAt,
-        deletedAt
+      SELECT employeeAccountId, firstName, lastName, email, role, contactNumber, address, accountStatus, createdAt, deletedAt
       FROM employeeAccount
       WHERE deletedAt IS NULL
       ORDER BY employeeAccountId DESC
     `);
-
     return employees;
   }
   catch (error) {

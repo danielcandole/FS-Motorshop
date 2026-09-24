@@ -51,15 +51,7 @@ export async function updateEmployeeData(request) {
   try {
     const employeeAccountId = request.employeeId;
 
-    const {
-      firstName,
-      lastName,
-      email,
-      password,
-      contactNumber,
-      address,
-      accountStatus
-    } = request.validatedEmployee;
+    const {firstName, lastName, email, password, contactNumber, address, accountStatus} = request.validatedEmployee;
 
     // Verify that the target employee still exists
     // and has not been soft deleted.
@@ -89,21 +81,11 @@ export async function updateEmployeeData(request) {
           accountStatus = ?
         WHERE employeeAccountId = ?
           AND deletedAt IS NULL
-      `, [
-        firstName,
-        lastName,
-        email,
-        contactNumber,
-        address,
-        accountStatus,
-        employeeAccountId
-      ]);
+        `, [firstName, lastName, email, contactNumber, address, accountStatus, employeeAccountId]
+      );
     }
     else {
-      const passwordHash = await bcrypt.hash(
-        password,
-        BCRYPT_SALT_ROUNDS
-      );
+      const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 
       await pool.execute(`
         UPDATE employeeAccount
@@ -117,21 +99,10 @@ export async function updateEmployeeData(request) {
           accountStatus = ?
         WHERE employeeAccountId = ?
           AND deletedAt IS NULL
-      `, [
-        firstName,
-        lastName,
-        email,
-        passwordHash,
-        contactNumber,
-        address,
-        accountStatus,
-        employeeAccountId
-      ]);
+        `, [firstName, lastName, email, passwordHash, contactNumber, address, accountStatus, employeeAccountId]
+      );
     }
-
-    return {
-      employeeAccountId
-    };
+    return {employeeAccountId};
   }
   catch (error) {
     console.error("Update Employee Service:", error);

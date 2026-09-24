@@ -82,8 +82,7 @@ export async function readEmployeeData() {
 export async function updateEmployeeData(request) {
   try {
     const employeeAccountId = request.employeeId;
-    const actorRole = request.actorRole;
-    
+
     const {
       firstName,
       lastName,
@@ -92,8 +91,7 @@ export async function updateEmployeeData(request) {
       address
     } = request.validatedEmployee;
 
-    // Verify that the target employee still exists
-    // and has not been soft deleted.
+    // Verify that the target employee still exists and has not been soft deleted.
     const [employees] = await pool.execute(`
       SELECT
         employeeAccountId

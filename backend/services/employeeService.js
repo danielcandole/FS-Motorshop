@@ -7,34 +7,13 @@ const BCRYPT_SALT_ROUNDS = 12;
 // CREATE EMPLOYEE
 export async function createEmployeeData(request) {
   try {
-    const {
-      firstName,
-      lastName,
-      email,
-      password,
-      role,
-      contactNumber,
-      address,
-      accountStatus
-    } = request.validatedEmployee;
+    const {firstName, lastName, email, password, role, contactNumber, address, accountStatus} = request.validatedEmployee;
 
-    const passwordHash = await bcrypt.hash(
-      password,
-      BCRYPT_SALT_ROUNDS
-    );
+const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 
     const [result] = await pool.execute(`
       INSERT INTO employeeAccount (
-        firstName,
-        lastName,
-        email,
-        passwordHash,
-        role,
-        contactNumber,
-        address,
-        accountStatus,
-        createdAt,
-        deletedAt
+        firstName, lastName, email, passwordHash, role, contactNumber, address, accountStatus, createdAt, deletedAt
       )
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, NULL)
     `, [

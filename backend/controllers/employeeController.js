@@ -1,48 +1,22 @@
-
-import {validateEmployeeInput, validateEmployeeId} from "../validators/validateEmployee.js";
-
+import {validateEmployeeInput, validateEmployeeUpdateInput, validateEmployeeId} from "../validators/validateEmployee.js";
 import { authenticate } from "../middleware/authenticationMiddleware.js";
-import { authorized } from "../middleware/authorizationMiddleware.js";
-
+import { authorized, canManageEmployeeTarget } from "../middleware/authorizationMiddleware.js";
 import {createEmployeeData, readEmployeeData, updateEmployeeData, deleteEmployeeData} from "../services/employeeService.js";
-
+import { getRoleTarget } from "../services/authorizationService.js";
 import { sendJson } from "../../frontend/js/utils/jsonUtils.js";
 
-const employeeRoles = [
-  "admin",
-  "manager",
-  "assistant manager",
-  "staff"
-];
-
-const passwordAndDeletePermissions = {
-  admin: ["manager", "assistant manager", "staff"],
-  manager: ["assistant manager", "staff"],
-  "assistant manager": ["assistant manager", "staff"],
-  staff: []
-};
-
-function canManageTarget(requesterRole, targetRole) {
-  return passwordAndDeletePermissions[requesterRole]?.includes(targetRole) ?? false;
-}
-
 function sendForbidden(response) {
-  sendJson(response, 403, {
-    message: "You do not have permission to perform this operation."
-  });
+  sendJson(response, 403, {message: "You do not have permission to perform this operation."});
 }
 
 function sendNotFound(response) {
-  sendJson(response, 404, {
-    message: "Employee not found."
-  });
+  sendJson(response, 404, {message: "Employee not found."});
 }
 
 function sendValidationError(response, errors) {
-  sendJson(response, 400, {
-    message: errors.join("\n")
-  });
+  sendJson(response, 400, {message: errors.join("\n")});
 }
+
 
 // CREATE EMPLOYEE
 export async function handleCreateEmployee(request, response) {
@@ -57,36 +31,12 @@ export async function handleCreateEmployee(request, response) {
 
   try {
     const employee = await authenticate(request, response);
-
-    if (!employee) {
-      return;
-    }
-
-    if (!authorized(request, response, "admin", "manager", "assistant manager")) {
-      return;
-    }
-
-    // Only admin may create an admin account.
-    if (
-      request.validatedEmployee.role === "admin" &&
-      employee.role !== "admin"
-    ) {
-      sendForbidden(response);
-      return;
-    }
-
-    // Reject unsupported roles.
-    if (!employeeRoles.includes(request.validatedEmployee.role)) {
-      sendValidationError(response, ["Invalid employee role."]);
-      return;
-    }
+    if (!employee) {return;}
+    if (!await authorized(request, response, "employee.create")) {return;}
 
     const data = await createEmployeeData(request);
 
-    sendJson(response, 201, {
-      message: "Employee created successfully.",
-      data
-    });
+    sendJson(response, 201, {message: "Employee created successfully.", data});
   }
   catch (error) {
     console.error("Create Employee Controller:", error);
@@ -97,49 +47,38 @@ export async function handleCreateEmployee(request, response) {
   }
 }
 
+
 // READ EMPLOYEES
 export async function handleReadEmployee(request, response) {
   try {
     const employee = await authenticate(request, response);
-
-    if (!employee) {
-      return;
-    }
-
-    if (!authorized(request, response, "admin", "manager", "assistant manager")) {
-      return;
-    }
+    if (!employee) {return;}
+    if (!await authorized(request, response, "employee.read")) {return;}
 
     const data = await readEmployeeData();
 
-    sendJson(response, 200, {
-      message: "Employees retrieved successfully.",
-      data
-    });
+    sendJson(response, 200, {message: "Employees retrieved successfully.", data});
   }
   catch (error) {
     console.error("Read Employee Controller:", error);
 
-    sendJson(response, 500, {
-      message: "Internal server error."
-    });
+    sendJson(response, 500, {message: "Internal server error."});
   }
 }
+
 
 // UPDATE EMPLOYEE
 export async function handleUpdateEmployee(request, response) {
   const idValidation = validateEmployeeId(request.employeeId);
 
   if (!idValidation.valid) {
-    sendJson(response, 400, {
-      message: idValidation.error
-    });
+    sendJson(response, 400, {message: idValidation.error});
     return;
   }
 
   request.employeeId = idValidation.data;
 
-  const validation = validateEmployeeInput(request.body);
+  const validation = validateEmployeeUpdateInput(request.body);
 
   if (!validation.valid) {
     sendValidationError(response, validation.errors);
@@ -150,51 +89,37 @@ export async function handleUpdateEmployee(request, response) {
 
   try {
     const employee = await authenticate(request, response);
-
-    if (!employee) {
-      return;
-    }
-
-    if (!authorized(request, response, "admin", "manager", "assistant manager")) {
-      return;
-    }
+    if (!employee) {return;}
+    if (!await authorized(request, response, "employee.update")) {return;}
 
     const requesterId = employee.employeeAccountId;
     const targetId = request.employeeId;
-    const requesterRole = employee.role;
 
-    // Prevent employees from modifying their own account
+    // Employees cannot modify their own account
     // through employee-management endpoints.
     if (requesterId === targetId) {
       sendForbidden(response);
       return;
     }
 
-    // Role changes are not granted to any role by the
-    // supplied permission hierarchy.
-    const [targetRole] = await import("../services/employeeService.js");
+    const targetEmployee = await getRoleTarget(targetId);
 
-    // The service does not expose a target lookup operation.
-    // Therefore target-role authorization cannot safely be
-    // completed here without adding one.
-    //
-    // Until a target lookup is available, deny password
-    // changes and role changes through this handler.
-    if (request.validatedEmployee.passwordHash !== undefined) {
+    if (!targetEmployee) {
+      sendNotFound(response);
+      return;
+    }
+
+    if (!canManageEmployeeTarget(employee.roleName, targetEmployee.roleName)) {
       sendForbidden(response);
       return;
     }
 
-    if (request.validatedEmployee.role !== undefined) {
-      sendForbidden(response);
-      return;
-    }
+    const data = await updateEmployeeData(request);
 
-    // Current service updates all supplied account fields.
-    // Target role restrictions must be checked before calling it.
-    // Do not proceed without a trusted target-role lookup.
-    sendForbidden(response);
-    return;
+    sendJson(response, 200, {
+      message: "Employee updated successfully.",
+      data
+    });
   }
   catch (error) {
     console.error("Update Employee Controller:", error);
@@ -210,9 +135,12 @@ export async function handleUpdateEmployee(request, response) {
   }
 }
 
+
 // DELETE EMPLOYEE
 export async function handleDeleteEmployee(request, response) {
-  const idValidation = validateEmployeeId(request.employeeId);
+  const idValidation = validateEmployeeId(
+    request.employeeId
+  );
 
   if (!idValidation.valid) {
     sendJson(response, 400, {
@@ -225,36 +153,36 @@ export async function handleDeleteEmployee(request, response) {
 
   try {
     const employee = await authenticate(request, response);
-
-    if (!employee) {
-      return;
-    }
-
-    if (!authorized(request, response, "admin", "manager", "assistant manager")) {
-      return;
-    }
+    if (!employee) {return;}
+    if (!await authorized(request, response, "employee.delete")) {return;}
 
     const requesterId = employee.employeeAccountId;
     const targetId = request.employeeId;
-    const requesterRole = employee.role;
 
+    // Employees cannot delete their own account.
     if (requesterId === targetId) {
       sendForbidden(response);
       return;
     }
 
-    // The current service does not provide the target's role.
-    // Do not delete until that role can be verified.
-    //
-    // Deletion must be restricted by the target-role matrix:
-    // admin -> manager, assistant manager, staff
-    // manager -> assistant manager, staff
-    // assistant manager -> assistant manager, staff
-    // staff -> none
-    //
-    // A target-role lookup is required before deletion.
-    sendForbidden(response);
-    return;
+    const targetEmployee = await getRoleTarget(targetId);
+
+    if (!targetEmployee) {
+      sendNotFound(response);
+      return;
+    }
+
+    if (!canManageEmployeeTarget(employee.roleName, targetEmployee.roleName)) {
+      sendForbidden(response);
+      return;
+    }
+    
+    const data = await deleteEmployeeData(request);
+
+    sendJson(response, 200, {
+      message: "Employee deleted successfully.",
+      data
+    });
   }
   catch (error) {
     console.error("Delete Employee Controller:", error);

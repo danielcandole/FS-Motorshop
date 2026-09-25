@@ -48,7 +48,7 @@ console.log("API Request:", request.method, JSON.stringify(pathname));
   }
 
   // EMPLOYEE ROLES
-  if (pathname === "/api/employee-roles" && request.method === "GET") {
+  if (pathname === "/api/employee-role" && request.method === "GET") {
     await handleReadEmployeeRole(request, response);
     return true;
   }

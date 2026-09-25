@@ -1,6 +1,9 @@
-import {isNonEmptyString, isStringWithinLength, isOptionalString, isNumericString} from "../utils/inputValidation.js";
-
-const allowedEmployeeRoles = ["admin", "manager", "assistant manager", "staff"];
+import {
+  isNonEmptyString,
+  isStringWithinLength,
+  isOptionalString,
+  isNumericString
+} from "../utils/inputValidation.js";
 
 const allowedAccountStatuses = ["active", "inactive"];
 
@@ -8,12 +11,22 @@ export function validateEmployeeInput(body) {
   const errors = [];
 
   if (!body || typeof body !== "object" || Array.isArray(body)) {
-    return {valid: false, errors: ["Invalid request body."]};
+    return {
+      valid: false,
+      errors: ["Invalid request body."]
+    };
   }
 
-  const {firstName, lastName, email, password, role, contactNumber, address, accountStatus} = body;
+  const {
+    firstName,
+    lastName,
+    email,
+    password,
+    roleId,
+    contactNumber,
+    address
+  } = body;
 
-  // First name
   if (!isNonEmptyString(firstName)) {
     errors.push("First name is required.");
   }
@@ -21,7 +34,6 @@ export function validateEmployeeInput(body) {
     errors.push("First name must not exceed 100 characters.");
   }
 
-  // Last name
   if (!isNonEmptyString(lastName)) {
     errors.push("Last name is required.");
   }
@@ -29,7 +41,6 @@ export function validateEmployeeInput(body) {
     errors.push("Last name must not exceed 100 characters.");
   }
 
-  // Email
   if (!isNonEmptyString(email)) {
     errors.push("Email is required.");
   }
@@ -37,7 +48,6 @@ export function validateEmployeeInput(body) {
     errors.push("Email must not exceed 255 characters.");
   }
 
-  // Password
   if (!isNonEmptyString(password)) {
     errors.push("Password is required.");
   }
@@ -45,12 +55,18 @@ export function validateEmployeeInput(body) {
     errors.push("Password must not exceed 72 characters.");
   }
 
-  // Role
-  if (!allowedEmployeeRoles.includes(role)) {
+  const numericRoleId = Number(roleId);
+
+  if (
+    roleId === undefined ||
+    roleId === null ||
+    String(roleId).trim() === "" ||
+    !Number.isSafeInteger(numericRoleId) ||
+    numericRoleId <= 0
+  ) {
     errors.push("Invalid employee role.");
   }
 
-  // Contact number
   if (!isNonEmptyString(contactNumber)) {
     errors.push("Contact number is required.");
   }
@@ -61,7 +77,6 @@ export function validateEmployeeInput(body) {
     errors.push("Contact number must not exceed 20 characters.");
   }
 
-  // Address
   if (!isOptionalString(address)) {
     errors.push("Address must be a string or null.");
   }
@@ -70,11 +85,6 @@ export function validateEmployeeInput(body) {
     !isStringWithinLength(address, 255)
   ) {
     errors.push("Address must not exceed 255 characters.");
-  }
-
-  // Account status
-  if (!allowedAccountStatuses.includes(accountStatus)) {
-    errors.push("Invalid account status.");
   }
 
   if (errors.length > 0) {
@@ -90,11 +100,12 @@ export function validateEmployeeInput(body) {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       email: email.trim(),
-      password: password,
-      role,
+      password,
+      roleId: numericRoleId,
       contactNumber: contactNumber.trim(),
-      address: address?.trim() || null,
-      accountStatus
+      address: typeof address === "string"
+        ? address.trim() || null
+        : null
     },
     errors: []
   };
@@ -111,14 +122,15 @@ export function validateEmployeeUpdateInput(body) {
     };
   }
 
-  const {firstName, lastName, email, password, role, contactNumber, address, accountStatus} = body;
+  const {
+    firstName,
+    lastName,
+    email,
+    password,
+    contactNumber,
+    address
+  } = body;
 
-  // Role changes are not supported by employee management.
-  if (role !== undefined) {
-    errors.push("Employee role cannot be changed.");
-  }
-
-  // First name
   if (!isNonEmptyString(firstName)) {
     errors.push("First name is required.");
   }
@@ -126,7 +138,6 @@ export function validateEmployeeUpdateInput(body) {
     errors.push("First name must not exceed 100 characters.");
   }
 
-  // Last name
   if (!isNonEmptyString(lastName)) {
     errors.push("Last name is required.");
   }
@@ -134,7 +145,6 @@ export function validateEmployeeUpdateInput(body) {
     errors.push("Last name must not exceed 100 characters.");
   }
 
-  // Email
   if (!isNonEmptyString(email)) {
     errors.push("Email is required.");
   }
@@ -142,15 +152,12 @@ export function validateEmployeeUpdateInput(body) {
     errors.push("Email must not exceed 255 characters.");
   }
 
-  // Password
-  if (password !== undefined &&(typeof password !== "string" || password.trim().length === 0)) {
-    errors.push("Password must not be empty.");
-  }
-  else if (typeof password === "string" && !isStringWithinLength(password, 72)) {
-    errors.push("Password must not exceed 72 characters.");
+  if (password !== undefined && password !== "") {
+    if (!isStringWithinLength(password, 255)) {
+      errors.push("Password must not exceed 255 characters.");
+    }
   }
 
-  // Contact number
   if (!isNonEmptyString(contactNumber)) {
     errors.push("Contact number is required.");
   }
@@ -161,46 +168,57 @@ export function validateEmployeeUpdateInput(body) {
     errors.push("Contact number must not exceed 20 characters.");
   }
 
-  // Address
   if (!isOptionalString(address)) {
     errors.push("Address must be a string or null.");
   }
-  else if (typeof address === "string" && !isStringWithinLength(address, 255)) {
+  else if (
+    typeof address === "string" &&
+    !isStringWithinLength(address, 255)
+  ) {
     errors.push("Address must not exceed 255 characters.");
   }
 
-  // Account status
-  if (!allowedAccountStatuses.includes(accountStatus)) {
-    errors.push("Invalid account status.");
-  }
-
   if (errors.length > 0) {
-    return {valid: false, errors};
+    return {
+      valid: false,
+      errors
+    };
   }
 
-  const data = {
-    firstName: firstName.trim(),
-    lastName: lastName.trim(),
-    email: email.trim(),
-    contactNumber: contactNumber.trim(),
-    address: address?.trim() || null,
-    accountStatus
+  return {
+    valid: true,
+    data: {
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      email: email.trim(),
+      contactNumber: contactNumber.trim(),
+      address: typeof address === "string"
+        ? address.trim() || null
+        : null
+    },
+    errors: []
   };
-
-  if (password !== undefined) {
-    data.password = password.trim();
-  }
-
-  return {valid: true, data, errors: []};
 }
 
 
 export function validateEmployeeId(employeeId) {
   const id = Number(employeeId);
 
-  if (employeeId === undefined || employeeId === null || String(employeeId).trim() === "" || !Number.isSafeInteger(id) || id <= 0) {
-    return {valid: false, error: "Invalid employee ID."};
+  if (
+    employeeId === undefined ||
+    employeeId === null ||
+    String(employeeId).trim() === "" ||
+    !Number.isSafeInteger(id) ||
+    id <= 0
+  ) {
+    return {
+      valid: false,
+      error: "Invalid employee ID."
+    };
   }
 
-  return {valid: true, data: id};
+  return {
+    valid: true,
+    data: id
+  };
 }

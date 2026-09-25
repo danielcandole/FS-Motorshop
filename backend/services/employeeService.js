@@ -2,21 +2,44 @@ import bcrypt from "bcrypt";
 import pool from "../config/database.js";
 const BCRYPT_SALT_ROUNDS = 12;
 
+// GET EMPLOYEE ROLES
+export async function getEmployeeRole() {
+  try {
+    const [roles] = await pool.execute(`
+      SELECT
+        roleId,
+        roleName
+      FROM role
+      ORDER BY roleId ASC
+    `);
+
+    return roles;
+  }
+  catch (error) {
+    console.error("Get Employee Roles Service:", error);
+    throw error;
+  }
+}
 
 // GET EMPLOYEE BY ID
 export async function getEmployeeById(employeeAccountId) {
   try {
     const [employees] = await pool.execute(`
       SELECT
-        employeeAccountId,
-        firstName,
-        lastName,
-        email,
-        roleId,
-        accountStatus
-      FROM employeeAccount
-      WHERE employeeAccountId = ?
-        AND deletedAt IS NULL
+        ea.employeeAccountId,
+        ea.firstName,
+        ea.lastName,
+        ea.email,
+        ea.roleId,
+        r.roleName,
+        ea.contactNumber,
+        ea.address,
+        ea.accountStatus
+      FROM employeeAccount AS ea
+      JOIN role AS r
+        ON ea.roleId = r.roleId
+      WHERE ea.employeeAccountId = ?
+        AND ea.deletedAt IS NULL
       LIMIT 1
     `, [employeeAccountId]);
 
@@ -84,19 +107,21 @@ export async function readEmployeeData() {
   try {
     const [employees] = await pool.execute(`
       SELECT
-        employeeAccountId,
-        firstName,
-        lastName,
-        email,
-        roleId,
-        contactNumber,
-        address,
-        accountStatus,
-        createdAt,
-        deletedAt
-      FROM employeeAccount
-      WHERE deletedAt IS NULL
-      ORDER BY employeeAccountId DESC
+        ea.employeeAccountId,
+        ea.firstName,
+        ea.lastName,
+        ea.email,
+        ea.roleId,
+        r.roleName,
+        ea.contactNumber,
+        ea.address,
+        ea.accountStatus,
+        ea.createdAt
+      FROM employeeAccount AS ea
+      JOIN role AS r
+        ON ea.roleId = r.roleId
+      WHERE ea.deletedAt IS NULL
+      ORDER BY ea.employeeAccountId DESC
     `);
 
     return employees;
@@ -120,7 +145,6 @@ export async function updateEmployeeData(request) {
       address
     } = request.validatedEmployee;
 
-    // Verify that the target employee still exists and has not been soft deleted.
     const [employees] = await pool.execute(`
       SELECT
         employeeAccountId
@@ -141,7 +165,7 @@ export async function updateEmployeeData(request) {
         lastName = ?,
         email = ?,
         contactNumber = ?,
-        address = ?,
+        address = ?
       WHERE employeeAccountId = ?
         AND deletedAt IS NULL
     `, [

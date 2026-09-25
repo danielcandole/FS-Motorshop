@@ -32,9 +32,9 @@ function configureRolePermissions(role) {
     throw new Error("Employee permission elements were not found.");
   }
 
-  const canManageEmployees =role === "admin" || role === "manager" || role === "assistant manager";
-  const canChangePassword =role === "admin" || role === "manager";
-  const canDeleteEmployees =role === "admin" || role === "manager";
+  const canManageEmployees = role === "admin" || role === "manager" || role === "assistant manager";
+  const canChangePassword = role === "admin" || role === "manager";
+  const canDeleteEmployees = role === "admin" || role === "manager";
 
   createButton.hidden = !canManageEmployees;
   createPasswordGroup.hidden = !canManageEmployees;
@@ -119,6 +119,60 @@ async function loadEmployeeRoles() {
   });
 }
 
+// OPEN EDIT EMPLOYEE
+function openEditEmployee(employee) {
+  const editEmployeeModal = document.getElementById("editEmployeeModal");
+  const editEmployeeForm = document.getElementById("editEmployeeForm");
+  const editEmployeeId = document.getElementById("editEmployeeId");
+  const editFirstName = document.getElementById("editFirstName");
+  const editLastName = document.getElementById("editLastName");
+  const editEmail = document.getElementById("editEmail");
+  const editPassword = document.getElementById("editPassword");
+  const editRoleId = document.getElementById("editRoleId");
+  const editContactNumber = document.getElementById("editContactNumber");
+  const editAddress = document.getElementById("editAddress");
+  const editAccountStatus = document.getElementById("editAccountStatus");
+  const editCreatedAt = document.getElementById("editCreatedAt");
+
+  const requiredElements = [
+    editEmployeeModal,
+    editEmployeeForm,
+    editEmployeeId,
+    editFirstName,
+    editLastName,
+    editEmail,
+    editPassword,
+    editRoleId,
+    editContactNumber,
+    editAddress,
+    editAccountStatus,
+    editCreatedAt
+  ];
+
+  if (requiredElements.some((element) => !element)) {
+    console.error("Employees: One or more edit employee elements were not found.");
+    return;
+  }
+
+  if (!employee) {
+    console.error("Employees: Employee data was not provided.");
+    return;
+  }
+
+  editEmployeeId.value = employee.employeeAccountId ?? "";
+  editFirstName.value = employee.firstName ?? "";
+  editLastName.value = employee.lastName ?? "";
+  editEmail.value = employee.email ?? "";
+  editPassword.value = "";
+  editRoleId.value = employee.roleId ?? "";
+  editContactNumber.value = employee.contactNumber ?? "";
+  editAddress.value = employee.address ?? "";
+  editAccountStatus.value = employee.accountStatus ?? "active";
+  editCreatedAt.value = employee.createdAt ?? "";
+
+  editEmployeeModal.showModal();
+}
+
 // CREATE TABLE CELL
 function createTableCell(value) {
   const cell = document.createElement("td");
@@ -143,9 +197,7 @@ function createEmployeeRow(employee) {
   row.appendChild(createTableCell(employee.accountStatus));
   row.appendChild(createTableCell(formatDateTime(employee.createdAt)));
 
-  row.addEventListener("click", () => {
-    openEditEmployee(employee);
-  });
+  row.addEventListener("click", () => {openEditEmployee(employee);});
 
   return row;
 }
@@ -366,6 +418,7 @@ async function updateEmployee(event) {
   const employeeData = Object.fromEntries(
     new FormData(employeeForm).entries()
   );
+  console.log("employeeData: ", employeeData);
 
   if (!employeeData.password) {
     delete employeeData.password;

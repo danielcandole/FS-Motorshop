@@ -132,8 +132,47 @@ export async function readEmployeeData() {
   }
 }
 
+// UPDATE EMPLOYEE PASSWORD
+export async function updateEmployeePassword(request) {
+  try {
+    const employeeAccountId = request.employeeId;
+    const password = request.validatedEmployee.password;
+
+    if (!password) {
+      return {employeeAccountId};
+    }
+
+    const passwordHash = await bcrypt.hash(
+      password,
+      BCRYPT_SALT_ROUNDS
+    );
+
+    const [result] = await pool.execute(`
+      UPDATE employeeAccount
+      SET
+        passwordHash = ?
+      WHERE employeeAccountId = ?
+        AND deletedAt IS NULL
+    `, [
+      passwordHash,
+      employeeAccountId
+    ]);
+
+    if (result.affectedRows === 0) {
+      throw new Error("Employee not found.");
+    }
+
+    return {employeeAccountId};
+  }
+  catch (error) {
+    console.error("Update Employee Password Service:", error);
+    throw error;
+  }
+}
+
 // UPDATE EMPLOYEE
 export async function updateEmployeeData(request) {
+
   try {
     const employeeAccountId = request.employeeId;
 

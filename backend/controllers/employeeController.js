@@ -1,7 +1,7 @@
 import {validateEmployeeInput, validateEmployeeUpdateInput, validateEmployeeId} from "../validators/validateEmployee.js";
 import { authenticate } from "../middleware/authenticationMiddleware.js";
 import { authorized, canManageEmployeeTarget } from "../middleware/authorizationMiddleware.js";
-import {createEmployeeData, readEmployeeData, updateEmployeeData, deleteEmployeeData, getEmployeeRole} from "../services/employeeService.js";
+import {createEmployeeData, readEmployeeData, updateEmployeeData, deleteEmployeeData, getEmployeeRole, updateEmployeePassword} from "../services/employeeService.js";
 import { getRoleTarget } from "../services/authorizationService.js";
 import { sendJson } from "../../frontend/js/utils/jsonUtils.js";
 
@@ -117,6 +117,7 @@ export async function handleUpdateEmployee(request, response) {
 
   try {
     const employee = await authenticate(request, response);
+
     if (!employee) {return;}
     if (!await authorized(request, response, "employee.update")) {return;}
 
@@ -142,7 +143,19 @@ export async function handleUpdateEmployee(request, response) {
       return;
     }
 
+    const password = request.validatedEmployee.password;
+
+    if (password) {
+      if (!await authorized(request, response, "employee.password.change")) {
+        return;
+      }
+    }
+
     const data = await updateEmployeeData(request);
+    
+    if (password || password !== "" || password !== null) {
+      await updateEmployeePassword(request);
+    }
 
     sendJson(response, 200, {
       message: "Employee updated successfully.",

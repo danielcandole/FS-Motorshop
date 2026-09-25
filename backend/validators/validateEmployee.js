@@ -126,6 +126,7 @@ export function validateEmployeeUpdateInput(body) {
     firstName,
     lastName,
     email,
+    password,
     contactNumber,
     address
   } = body;
@@ -149,6 +150,12 @@ export function validateEmployeeUpdateInput(body) {
   }
   else if (!isStringWithinLength(email, 255)) {
     errors.push("Email must not exceed 255 characters.");
+  }
+
+  if (password !== undefined && password !== "") {
+    if (!isStringWithinLength(password, 255)) {
+      errors.push("Password must not exceed 255 characters.");
+    }
   }
 
   if (!isNonEmptyString(contactNumber)) {

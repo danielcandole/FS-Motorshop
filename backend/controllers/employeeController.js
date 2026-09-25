@@ -1,21 +1,9 @@
 import {validateEmployeeInput, validateEmployeeUpdateInput, validateEmployeeId} from "../validators/validateEmployee.js";
 import { authenticate } from "../middleware/authenticationMiddleware.js";
-import { authorized } from "../middleware/authorizationMiddleware.js";
-import {createEmployeeData, readEmployeeData, getEmployeeAuthorizationData, updateEmployeeData, deleteEmployeeData} from "../services/employeeService.js";
+import { authorized, canManageEmployeeTarget } from "../middleware/authorizationMiddleware.js";
+import {createEmployeeData, readEmployeeData, updateEmployeeData, deleteEmployeeData} from "../services/employeeService.js";
+import { getRoleTarget } from "../services/authorizationService.js";
 import { sendJson } from "../../frontend/js/utils/jsonUtils.js";
-
-const employeeRoles = ["admin", "manager", "assistant manager", "staff"];
-
-const targetRolePermissions = {
-  admin: ["manager", "assistant manager", "staff"],
-  manager: ["assistant manager", "staff"],
-  "assistant manager": ["assistant manager", "staff"],
-  staff: []
-};
-
-function canManageTarget(requesterRole, targetRole) {
-  return targetRolePermissions[requesterRole]?.includes(targetRole) ?? false;
-}
 
 function sendForbidden(response) {
   sendJson(response, 403, {message: "You do not have permission to perform this operation."});
@@ -44,20 +32,10 @@ export async function handleCreateEmployee(request, response) {
   try {
     const employee = await authenticate(request, response);
     if (!employee) {return;}
-    if (!authorized(request, response, "admin", "manager", "assistant manager")) {return;}
+    if (!await authorized(request, response, "employee.create")) {return;}
 
-    // Only an admin may create an admin account.
-    if (request.validatedEmployee.role === "admin" && employee.role !== "admin") {
-      sendForbidden(response);
-      return;
-    }
-
-    // Reject unsupported roles.
-    if (!employeeRoles.includes(request.validatedEmployee.role)) {
-      sendValidationError(response, ["Invalid employee role."]);
-      return;
-    }
     const data = await createEmployeeData(request);
+
     sendJson(response, 201, {message: "Employee created successfully.", data});
   }
   catch (error) {
@@ -75,7 +53,7 @@ export async function handleReadEmployee(request, response) {
   try {
     const employee = await authenticate(request, response);
     if (!employee) {return;}
-    if (!authorized(request, response, "admin", "manager", "assistant manager")) {return;}
+    if (!await authorized(request, response, "employee.read")) {return;}
 
     const data = await readEmployeeData();
 
@@ -112,7 +90,7 @@ export async function handleUpdateEmployee(request, response) {
   try {
     const employee = await authenticate(request, response);
     if (!employee) {return;}
-    if (!authorized(request, response, "admin", "manager", "assistant manager")) {return;}
+    if (!await authorized(request, response, "employee.update")) {return;}
 
     const requesterId = employee.employeeAccountId;
     const targetId = request.employeeId;
@@ -123,16 +101,15 @@ export async function handleUpdateEmployee(request, response) {
       sendForbidden(response);
       return;
     }
-    // Get the target role directly from the database.
-    const targetEmployee = await getEmployeeAuthorizationData(targetId);
 
-    // Apply the target-role hierarchy.
-    if (
-      !canManageTarget(
-        employee.role,
-        targetEmployee.role
-      )
-    ) {
+    const targetEmployee = await getRoleTarget(targetId);
+
+    if (!targetEmployee) {
+      sendNotFound(response);
+      return;
+    }
+
+    if (!canManageEmployeeTarget(employee.roleName, targetEmployee.roleName)) {
       sendForbidden(response);
       return;
     }
@@ -176,22 +153,8 @@ export async function handleDeleteEmployee(request, response) {
 
   try {
     const employee = await authenticate(request, response);
-
-    if (!employee) {
-      return;
-    }
-
-    if (
-      !authorized(
-        request,
-        response,
-        "admin",
-        "manager",
-        "assistant manager"
-      )
-    ) {
-      return;
-    }
+    if (!employee) {return;}
+    if (!await authorized(request, response, "employee.delete")) {return;}
 
     const requesterId = employee.employeeAccountId;
     const targetId = request.employeeId;
@@ -202,22 +165,18 @@ export async function handleDeleteEmployee(request, response) {
       return;
     }
 
-    // Get the target role directly from the database.
-    const targetEmployee = await getEmployeeAuthorizationData(
-      targetId
-    );
+    const targetEmployee = await getRoleTarget(targetId);
 
-    // Apply the target-role hierarchy.
-    if (
-      !canManageTarget(
-        employee.role,
-        targetEmployee.role
-      )
-    ) {
-      sendForbidden(response);
+    if (!targetEmployee) {
+      sendNotFound(response);
       return;
     }
 
+    if (!canManageEmployeeTarget(employee.roleName, targetEmployee.roleName)) {
+      sendForbidden(response);
+      return;
+    }
+    
     const data = await deleteEmployeeData(request);
 
     sendJson(response, 200, {

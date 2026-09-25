@@ -599,10 +599,7 @@ export async function initEmployeesPage() {
     configureRolePermissions(currentEmployeeRole);
 
     // Only managers and assistant managers may access this page.
-    if (
-      currentEmployeeRole !== "manager" &&
-      currentEmployeeRole !== "assistant manager"
-    ) {
+    if (currentEmployeeRole !== "admin" && currentEmployeeRole !== "manager" && currentEmployeeRole !== "assistant manager") {
       showError(
         "You are not authorized to access employees."
       );

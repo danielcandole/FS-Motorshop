@@ -6,35 +6,155 @@ export async function createJobOrderData(request) {
   try {
     await connection.beginTransaction();
 
-    const {customerName, customerContactNumber, motorcycleName, motorcycleModel, repairDate, description, repairStatus} = request.validatedJobOrder;
+    const {
+      customerName,
+      customerContactNumber,
+      motorcycleName,
+      motorcycleModel,
+      repairDate,
+      reportedProblem,
+      repairStatus
+    } = request.validatedJobOrder;
+
     const formattedRepairDate = repairDate.replace("T", " ") + ":00";
-    // Find customer by contact number
+
+    // Create customer
+    const [customerResult] = await connection.execute(`
+      INSERT INTO customerRecord (
+        customerName,
+        contactNo
+      )
+      VALUES (?, ?)
+    `, [
+      customerName,
+      customerContactNumber
+    ]);
+
+    const customerRecordId = customerResult.insertId;
+
+    // Create motorcycle under the new customer
+    const [motorcycleResult] = await connection.execute(`
+      INSERT INTO motorcycleRecord (
+        customerRecordId,
+        motorcycleName,
+        motorcycleModel
+      )
+      VALUES (?, ?, ?)
+    `, [
+      customerRecordId,
+      motorcycleName,
+      motorcycleModel || null
+    ]);
+
+    const motorcycleRecordId = motorcycleResult.insertId;
+
+    // Create job order
+    const [jobOrderResult] = await connection.execute(`
+      INSERT INTO jobOrder (
+        employeeAccountId,
+        motorcycleRecordId,
+        repairDate,
+        reportedProblem,
+        repairStatus
+      )
+      VALUES (?, ?, ?, ?, ?)
+    `, [
+      request.employee.employeeAccountId,
+      motorcycleRecordId,
+      formattedRepairDate,
+      reportedProblem || null,
+      repairStatus
+    ]);
+
+    await connection.commit();
+
+    return {
+      jobOrderId: jobOrderResult.insertId,
+      customerRecordId,
+      motorcycleRecordId
+    };
+  }
+  catch (error) {
+    await connection.rollback();
+    console.error("Create Job Order Service:", error);
+    throw error;
+  }
+  finally {
+    connection.release();
+  }
+}
+
+export async function readJobOrderData() {
+  try {
+    const [jobOrders] = await pool.execute(`
+      SELECT
+        j.jobOrderId,
+        c.customerRecordId,
+        c.customerName,
+        c.contactNo,
+        m.motorcycleRecordId,
+        m.motorcycleName,
+        m.motorcycleModel,
+        j.repairDate,
+        j.reportedProblem,
+        j.repairStatus
+      FROM jobOrder AS j
+      INNER JOIN motorcycleRecord AS m
+        ON j.motorcycleRecordId = m.motorcycleRecordId
+      INNER JOIN customerRecord AS c
+        ON m.customerRecordId = c.customerRecordId
+      ORDER BY j.jobOrderId DESC
+    `);
+
+    return jobOrders;
+  }
+  catch (error) {
+    console.error("Read Job Order Service:", error);
+    throw error;
+  }
+}
+
+export async function updateJobOrderData(request) {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const jobOrderId = request.jobOrderId;
+
+    const {
+      customerRecordId,
+      motorcycleName,
+      motorcycleModel,
+      repairDate,
+      reportedProblem,
+      repairStatus
+    } = request.validatedJobOrder;
+
+    const formattedRepairDate = repairDate.replace("T", " ") + ":00";
+
+    // Check whether the job order exists
+    const [jobOrders] = await connection.execute(`
+      SELECT jobOrderId
+      FROM jobOrder
+      WHERE jobOrderId = ?
+      LIMIT 1
+    `, [jobOrderId]);
+
+    if (jobOrders.length === 0) {
+      throw new Error("Job order not found.");
+    }
+
+    // Check whether the customer exists
     const [customers] = await connection.execute(`
       SELECT customerRecordId
       FROM customerRecord
-      WHERE contactNo = ?
+      WHERE customerRecordId = ?
       LIMIT 1
-    `, [customerContactNumber]);
+    `, [customerRecordId]);
 
-    let customerRecordId;
-
-    if (customers.length > 0) {
-      customerRecordId = customers[0].customerRecordId;
-    }
-    else {
-      // Create customer if they do not exist
-      const [customerResult] = await connection.execute(`
-        INSERT INTO customerRecord (
-          customerName,
-          contactNo
-        )
-        VALUES (?, ?)
-      `, [
-        customerName,
-        customerContactNumber
-      ]);
-
-      customerRecordId = customerResult.insertId;
+    if (customers.length === 0) {
+      throw new Error("Customer not found.");
     }
 
     // Find motorcycle belonging to the customer
@@ -57,6 +177,7 @@ export async function createJobOrderData(request) {
       motorcycleRecordId = motorcycles[0].motorcycleRecordId;
     }
     else {
+      // Create motorcycle under the selected customer
       const [motorcycleResult] = await connection.execute(`
         INSERT INTO motorcycleRecord (
           customerRecordId,
@@ -73,187 +194,19 @@ export async function createJobOrderData(request) {
       motorcycleRecordId = motorcycleResult.insertId;
     }
 
-    // Create job order
-    const [jobOrderResult] = await connection.execute(`
-      INSERT INTO jobOrder (
-        employeeAccountId,
-        motorcycleRecordId,
-        repairDate,
-        description,
-        repairStatus
-      )
-      VALUES (?, ?, ?, ?, ?)
-    `, [
-      request.employee.employeeAccountId,
-      motorcycleRecordId,
-      formattedRepairDate,
-      description || null,
-      repairStatus
-    ]);
-
-    await connection.commit();
-
-    return {
-      jobOrderId: jobOrderResult.insertId,
-      customerRecordId,
-      motorcycleRecordId
-    };
-  }
-  catch (error) {
-    await connection.rollback();
-    throw error;
-  }
-  finally {
-    connection.release();
-  }
-}
-
-export async function readJobOrderData() {
-  try {
-    const [jobOrders] = await pool.execute(`
-      SELECT
-        j.jobOrderId,
-        c.customerName,
-        c.contactNo,
-        m.motorcycleName,
-        m.motorcycleModel,
-        j.repairDate,
-        j.description,
-        j.repairStatus
-      FROM jobOrder j
-      INNER JOIN motorcycleRecord m
-        ON j.motorcycleRecordId = m.motorcycleRecordId
-      INNER JOIN customerRecord c
-        ON m.customerRecordId = c.customerRecordId
-      ORDER BY j.jobOrderId DESC
-    `);
-
-    return jobOrders;
-  }
-  catch (error) {
-    console.error("Read Job Order Service:", error);
-    throw error;
-  }
-}
-
-
-export async function updateJobOrderData(request) {
-  const connection = await pool.getConnection();
-
-  try {
-    await connection.beginTransaction();
-
-    const jobOrderId = request.jobOrderId;
-
-    const {
-      customerName,
-      customerContactNumber,
-      motorcycleName,
-      motorcycleModel,
-      repairDate,
-      description,
-      repairStatus
-    } = request.validatedJobOrder;
-
-    const formattedRepairDate = repairDate.replace("T", " ") + ":00";
-
-    // Check whether the job order exists
-    const [jobOrders] = await connection.execute(`
-      SELECT jobOrderId
-      FROM jobOrder
-      WHERE jobOrderId = ?
-      LIMIT 1
-    `, [jobOrderId]);
-
-    if (jobOrders.length === 0) {
-      throw new Error("Job order not found.");
-    }
-
-    // Find customer using the new name and contact number
-    const [customers] = await connection.execute(`
-      SELECT customerRecordId
-      FROM customerRecord
-      WHERE customerName = ?
-        AND contactNo = ?
-      LIMIT 1
-    `, [
-      customerName,
-      customerContactNumber
-    ]);
-
-    let customerRecordId;
-
-    if (customers.length > 0) {
-      // Use the existing matching customer
-      customerRecordId = customers[0].customerRecordId;
-    }
-    else {
-      // Create a new customer if no matching record exists
-      const [customerResult] = await connection.execute(`
-        INSERT INTO customerRecord (
-          customerName,
-          contactNo
-        )
-        VALUES (?, ?)
-      `, [
-        customerName,
-        customerContactNumber
-      ]);
-
-      customerRecordId = customerResult.insertId;
-    }
-
-    // Find motorcycle belonging to the selected customer
-    const [motorcycles] = await connection.execute(`
-      SELECT motorcycleRecordId
-      FROM motorcycleRecord
-      WHERE customerRecordId = ?
-        AND motorcycleName = ?
-        AND motorcycleModel <=> ?
-      LIMIT 1
-    `, [
-      customerRecordId,
-      motorcycleName,
-      motorcycleModel || null
-    ]);
-
-    let motorcycleRecordId;
-
-    if (motorcycles.length > 0) {
-      // Use the existing matching motorcycle
-      motorcycleRecordId = motorcycles[0].motorcycleRecordId;
-    }
-    else {
-      // Create a motorcycle under the selected customer
-      const [motorcycleResult] = await connection.execute(`
-        INSERT INTO motorcycleRecord (
-          customerRecordId,
-          motorcycleName,
-          motorcycleModel
-        )
-        VALUES (?, ?, ?)
-      `, [
-        customerRecordId,
-        motorcycleName,
-        motorcycleModel || null
-      ]);
-
-      motorcycleRecordId = motorcycleResult.insertId;
-    }
-
-    // Update job order and associate it with the selected motorcycle
+    // Update job order
     await connection.execute(`
       UPDATE jobOrder
       SET
         motorcycleRecordId = ?,
         repairDate = ?,
-        description = ?,
+        reportedProblem = ?,
         repairStatus = ?
       WHERE jobOrderId = ?
     `, [
       motorcycleRecordId,
       formattedRepairDate,
-      description || null,
+      reportedProblem || null,
       repairStatus,
       jobOrderId
     ]);
@@ -275,7 +228,6 @@ export async function updateJobOrderData(request) {
     connection.release();
   }
 }
-
 
 export async function deleteJobOrderData(request) {
   try {

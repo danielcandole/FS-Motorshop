@@ -16,14 +16,13 @@ export async function handleCreateJobOrder(request, response) {
   request.validatedJobOrder = validation.data;
 
   try {
-    if (!await authenticate(request, response)) {return;}
-    if (!authorized(request, response, "manager")) {return;}
-    const result = await createJobOrderData(request);
+    const employee = await authenticate(request, response);
+    if (!employee) {return;}
+    if (!await authorized(request, response, "jobOrder.create")) {return;}
 
-    sendJson(response, 201, {
-      message: "Job order created successfully.",
-      data: result
-    });
+    const data = await createJobOrderData(request);
+
+    sendJson(response, 201, {message: "Job order created successfully.", data});
   }
   catch (error) {
     console.error("Create Job Order:", error);
@@ -36,15 +35,13 @@ export async function handleCreateJobOrder(request, response) {
 
 export async function handleReadJobOrder(request, response) {
   try {
-    if (!await authenticate(request, response)) {return;}
-    if (!authorized(request, response, "manager")) {return;}
+    const employee = await authenticate(request, response);
+    if (!employee) {return;}
+    if (!await authorized(request, response, "jobOrder.read")) {return;}
 
-    const result = await readJobOrderData(request);
+    const data = await readJobOrderData(request);
     
-    sendJson(response, 200, {
-      message: "Job orders fetched successfully.",
-      data: result
-    });
+    sendJson(response, 200, {message: "Job orders fetched successfully.", data});
   }
   catch (error) {
     console.error("Read Job Order:", error);
@@ -61,9 +58,7 @@ export async function handleUpdateJobOrder(request, response) {
   const idValidation = validateJobOrderId(request.jobOrderId);
 
   if (!idValidation.valid) {
-    sendJson(response, 400, {
-      message: idValidation.error
-    });
+    sendJson(response, 400, {message: idValidation.error});
     return;
   }
 
@@ -73,32 +68,21 @@ export async function handleUpdateJobOrder(request, response) {
   const validation = validateJobOrderInput(request.body);
 
   if (!validation.valid) {
-    sendJson(response, 400, {
-      message: validation.errors.join("\n")
-    });
+    sendJson(response, 400, {message: validation.errors.join("\n")});
     return;
   }
 
   request.validatedJobOrder = validation.data;
 
   try {
-    // 3. Authenticate user
-    if (!await authenticate(request, response)) {
-      return;
-    }
-
-    // 4. Authorize user
-    if (!authorized(request, response, "manager")) {
-      return;
-    }
+    const employee = await authenticate(request, response);
+    if (!employee) {return;}
+    if (!await authorized(request, response, "jobOrder.update")) {return;}
 
     // 5. Update database
-    const result = await updateJobOrderData(request);
+    const data = await updateJobOrderData(request);
 
-    sendJson(response, 200, {
-      message: "Job order updated successfully.",
-      data: result
-    });
+    sendJson(response, 200, {message: "Job order updated successfully.", data});
   }
   catch (error) {
     console.error("Update Job Order:", error);
@@ -132,17 +116,10 @@ export async function handleDeleteJobOrder(request, response) {
   request.jobOrderId = validation.data;
 
   try {
-    // 2. Authenticate user
-    if (!await authenticate(request, response)) {
-      return;
-    }
+    const employee = await authenticate(request, response);
+    if (!employee) {return;}
+    if (!await authorized(request, response, "jobOrder.delete")) {return;}
 
-    // 3. Authorize user
-    if (!authorized(request, response, "manager")) {
-      return;
-    }
-
-    // 4. Delete from database
     const result = await deleteJobOrderData(request);
 
     sendJson(response, 200, {

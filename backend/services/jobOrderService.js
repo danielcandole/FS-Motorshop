@@ -96,13 +96,14 @@ export async function readJobOrderData() {
         m.motorcycleName,
         m.motorcycleModel,
         j.repairDate,
-        j.reportedProblem,
+        j.description,
         j.repairStatus
       FROM jobOrder AS j
       INNER JOIN motorcycleRecord AS m
         ON j.motorcycleRecordId = m.motorcycleRecordId
       INNER JOIN customerRecord AS c
         ON m.customerRecordId = c.customerRecordId
+      WHERE j.deletedAt IS NULL
       ORDER BY j.jobOrderId DESC
     `);
 
@@ -124,6 +125,9 @@ export async function updateJobOrderData(request) {
 
     const {
       customerRecordId,
+      customerName,
+      customerContactNumber,
+      motorcycleRecordId,
       motorcycleName,
       motorcycleModel,
       repairDate,
@@ -133,11 +137,13 @@ export async function updateJobOrderData(request) {
 
     const formattedRepairDate = repairDate.replace("T", " ") + ":00";
 
-    // Check whether the job order exists
+    // Find active job order
     const [jobOrders] = await connection.execute(`
-      SELECT jobOrderId
+      SELECT
+        jobOrderId
       FROM jobOrder
       WHERE jobOrderId = ?
+        AND deletedAt IS NULL
       LIMIT 1
     `, [jobOrderId]);
 
@@ -145,21 +151,12 @@ export async function updateJobOrderData(request) {
       throw new Error("Job order not found.");
     }
 
-    // Check whether the customer exists
-    const [customers] = await connection.execute(`
-      SELECT customerRecordId
-      FROM customerRecord
-      WHERE customerRecordId = ?
-      LIMIT 1
-    `, [customerRecordId]);
+    const foundJobOrderId = jobOrders[0].jobOrderId;
 
-    if (customers.length === 0) {
-      throw new Error("Customer not found.");
-    }
-
-    // Find motorcycle belonging to the customer
+    // Find motorcycle
     const [motorcycles] = await connection.execute(`
-      SELECT motorcycleRecordId
+      SELECT
+        motorcycleRecordId
       FROM motorcycleRecord
       WHERE customerRecordId = ?
         AND motorcycleName = ?
@@ -171,28 +168,54 @@ export async function updateJobOrderData(request) {
       motorcycleModel || null
     ]);
 
-    let motorcycleRecordId;
-
-    if (motorcycles.length > 0) {
-      motorcycleRecordId = motorcycles[0].motorcycleRecordId;
+    if (motorcycles.length === 0) {
+      throw new Error("Motorcycle not found.");
     }
-    else {
-      // Create motorcycle under the selected customer
-      const [motorcycleResult] = await connection.execute(`
-        INSERT INTO motorcycleRecord (
-          customerRecordId,
-          motorcycleName,
-          motorcycleModel
-        )
-        VALUES (?, ?, ?)
-      `, [
-        customerRecordId,
-        motorcycleName,
-        motorcycleModel || null
-      ]);
 
-      motorcycleRecordId = motorcycleResult.insertId;
+    const foundMotorcycleRecordId = motorcycles[0].motorcycleRecordId;
+
+    // Find customer
+    const [customers] = await connection.execute(`
+      SELECT
+        customerRecordId
+      FROM customerRecord
+      WHERE customerRecordId = ?
+      LIMIT 1
+    `, [customerRecordId]);
+
+    if (customers.length === 0) {
+      throw new Error("Customer not found.");
     }
+
+    const foundCustomerRecordId = customers[0].customerRecordId;
+
+    // Update customer
+    await connection.execute(`
+      UPDATE customerRecord
+      SET
+        customerName = ?,
+        contactNo = ?
+      WHERE customerRecordId = ?
+    `, [
+      customerName,
+      customerContactNumber,
+      foundCustomerRecordId
+    ]);
+
+    // Update motorcycle
+    await connection.execute(`
+      UPDATE motorcycleRecord
+      SET
+        motorcycleName = ?,
+        motorcycleModel = ?
+      WHERE motorcycleRecordId = ?
+        AND customerRecordId = ?
+    `, [
+      motorcycleName,
+      motorcycleModel || null,
+      foundMotorcycleRecordId,
+      foundCustomerRecordId
+    ]);
 
     // Update job order
     await connection.execute(`
@@ -203,19 +226,20 @@ export async function updateJobOrderData(request) {
         reportedProblem = ?,
         repairStatus = ?
       WHERE jobOrderId = ?
+        AND deletedAt IS NULL
     `, [
       motorcycleRecordId,
       formattedRepairDate,
       reportedProblem || null,
       repairStatus,
-      jobOrderId
+      foundJobOrderId
     ]);
 
     await connection.commit();
 
     return {
-      jobOrderId,
-      customerRecordId,
+      jobOrderId: foundJobOrderId,
+      customerRecordId: foundCustomerRecordId,
       motorcycleRecordId
     };
   }
@@ -232,8 +256,10 @@ export async function updateJobOrderData(request) {
 export async function deleteJobOrderData(request) {
   try {
     const [result] = await pool.execute(`
-      DELETE FROM jobOrder
+      UPDATE jobOrder
+      SET deletedAt = CURRENT_TIMESTAMP
       WHERE jobOrderId = ?
+        AND deletedAt IS NULL
     `, [request.jobOrderId]);
 
     if (result.affectedRows === 0) {

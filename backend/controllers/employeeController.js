@@ -117,7 +117,6 @@ export async function handleUpdateEmployee(request, response) {
 
   try {
     const employee = await authenticate(request, response);
-
     if (!employee) {return;}
     if (!await authorized(request, response, "employee.update")) {return;}
 

@@ -1,10 +1,33 @@
 import { login, logout, getLoggedEmployee } from "../controllers/authController.js";
-import { handleCreateJobOrder, handleReadJobOrder, handleUpdateJobOrder, handleDeleteJobOrder } from "../controllers/jobOrderController.js";
-import {handleCreateEmployee, handleReadEmployee, handleUpdateEmployee, handleDeleteEmployee, handleReadEmployeeRole} from "../controllers/employeeController.js";
+import {
+  handleCreateJobOrder,
+  handleReadJobOrder,
+  handleUpdateJobOrder,
+  handleDeleteJobOrder
+} from "../controllers/jobOrderController.js";
+import {
+  handleCreateEmployee,
+  handleReadEmployee,
+  handleUpdateEmployee,
+  handleDeleteEmployee,
+  handleReadEmployeeRole
+} from "../controllers/employeeController.js";
+import {
+  handleCreateSupplier,
+  handleReadSupplier,
+  handleUpdateSupplier,
+  handleDeleteSupplier
+} from "../controllers/supplierController.js";
+import {
+  handleCreateInventoryItem,
+  handleReadInventoryItem,
+  handleUpdateInventoryItem,
+  handleDeleteInventoryItem
+} from "../controllers/inventoryItemController.js";
 
 export async function handleAuthRoute(request, response, body) {
   const pathname = new URL(request.url, `http://${request.headers.host}`).pathname;
-console.log("API Request:", request.method, JSON.stringify(pathname));
+  console.log("API Request:", request.method, JSON.stringify(pathname));
   if (pathname === "/api/auth/login" && request.method === "POST") {
     await login(request, response, body);
     return true;
@@ -53,7 +76,6 @@ console.log("API Request:", request.method, JSON.stringify(pathname));
     return true;
   }
 
-
   // EMPLOYEES
   if (pathname === "/api/employees" && 
     request.method === "GET") {
@@ -84,6 +106,63 @@ console.log("API Request:", request.method, JSON.stringify(pathname));
     }
   }
 
+  // SUPPLIERS
+  if (pathname === "/api/suppliers" && request.method === "POST") {
+    request.body = body;
+    await handleCreateSupplier(request, response);
+    return true;
+  }
+
+  if (pathname === "/api/suppliers" && request.method === "GET") {
+    await handleReadSupplier(request, response);
+    return true;
+  }
+
+  const supplierMatch = pathname.match(/^\/api\/suppliers\/(\d+)$/);
+
+  if (supplierMatch) {
+    request.supplierId = Number(supplierMatch[1]);
+
+    if (request.method === "PUT") {
+      request.body = body;
+      await handleUpdateSupplier(request, response);
+      return true;
+    }
+
+    if (request.method === "DELETE") {
+      await handleDeleteSupplier(request, response);
+      return true;
+    }
+  }
+
+  // INVENTORY ITEMS
+  if (pathname === "/api/inventory-items" && request.method === "POST") {
+    request.body = body;
+    await handleCreateInventoryItem(request, response);
+    return true;
+  }
+
+  if (pathname === "/api/inventory-items" && request.method === "GET") {
+    await handleReadInventoryItem(request, response);
+    return true;
+  }
+
+  const inventoryItemMatch = pathname.match(/^\/api\/inventory-items\/(\d+)$/);
+
+  if (inventoryItemMatch) {
+    request.inventoryItemId = Number(inventoryItemMatch[1]);
+
+    if (request.method === "PUT") {
+      request.body = body;
+      await handleUpdateInventoryItem(request, response);
+      return true;
+    }
+
+    if (request.method === "DELETE") {
+      await handleDeleteInventoryItem(request, response);
+      return true;
+    }
+  }
 
   return false;
 }

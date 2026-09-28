@@ -51,12 +51,14 @@ async function loadSuppliers() {
   createPlaceholder.textContent = "Select supplier";
   createPlaceholder.disabled = true;
   createPlaceholder.selected = true;
+  createPlaceholder.hidden = true;
 
   const editPlaceholder = document.createElement("option");
   editPlaceholder.value = "";
   editPlaceholder.textContent = "Select supplier";
   editPlaceholder.disabled = true;
   editPlaceholder.selected = true;
+  editPlaceholder.hidden = true;
 
   supplierSelect.appendChild(createPlaceholder);
   editSupplierSelect.appendChild(editPlaceholder);
@@ -335,13 +337,15 @@ async function loadInventoryItems() {
 function openCreateInventoryItem() {
   const inventoryItemModal = document.getElementById("inventoryItemModal");
   const inventoryItemForm = document.getElementById("inventoryItemForm");
+  const supplierSelect = document.getElementById("supplierId");
 
-  if (!inventoryItemModal || !inventoryItemForm) {
+  if (!inventoryItemModal || !inventoryItemForm || !supplierSelect) {
     console.error("Inventory Items: Create inventory item elements were not found.");
     return;
   }
 
   inventoryItemForm.reset();
+  supplierSelect.selectedIndex = 0;
 
   configureSupplierFields();
 

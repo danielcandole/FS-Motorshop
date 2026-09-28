@@ -122,7 +122,7 @@ export function validateInventoryItemInput(body) {
   if (costPrice === undefined || costPrice === null || costPrice === "") {
     errors.push("Cost price is required.");
   }
-  else if (!isNumericString(String(costPrice))) {
+  else if (!isNumericString(costPrice)) {
     errors.push("Cost price must be numeric.");
   }
   else if (Number(costPrice) < 0) {
@@ -133,7 +133,7 @@ export function validateInventoryItemInput(body) {
   if (sellingPrice === undefined || sellingPrice === null || sellingPrice === "") {
     errors.push("Selling price is required.");
   }
-  else if (!isNumericString(String(sellingPrice))) {
+  else if (!isNumericString(sellingPrice)) {
     errors.push("Selling price must be numeric.");
   }
   else if (Number(sellingPrice) < 0) {
@@ -283,7 +283,7 @@ export function validateInventoryItemUpdateInput(body) {
   if (costPrice === undefined || costPrice === null || costPrice === "") {
     errors.push("Cost price is required.");
   }
-  else if (!isNumericString(String(costPrice))) {
+  else if (!isNumericString(costPrice)) {
     errors.push("Cost price must be numeric.");
   }
   else if (Number(costPrice) < 0) {
@@ -294,7 +294,7 @@ export function validateInventoryItemUpdateInput(body) {
   if (sellingPrice === undefined || sellingPrice === null || sellingPrice === "") {
     errors.push("Selling price is required.");
   }
-  else if (!isNumericString(String(sellingPrice))) {
+  else if (!isNumericString(sellingPrice)) {
     errors.push("Selling price must be numeric.");
   }
   else if (Number(sellingPrice) < 0) {

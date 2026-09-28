@@ -62,6 +62,8 @@ sess_*
 *.db
 *.sql
 
+!fs_motorshop.sql
+
 
 # Database dumps
 *.sql.gz

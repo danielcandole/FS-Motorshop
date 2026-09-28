@@ -3,6 +3,7 @@ import { initLogoutBtn } from "../auth/logout.js";
 import { initJobOrdersPage } from "./jobOrder.js";
 import { initEmployeesPage } from "./employee.js";
 import { initSuppliersPage } from "./supplier.js";
+import { initInventoryItemsPage } from "./inventoryItem.js";
 
 const routes = {
   "/login": "/auth/login.html",
@@ -97,6 +98,7 @@ async function loadPage(route) {
     if (route === "/job-orders") {await initJobOrdersPage();}
     if (route === "/employee") {await initEmployeesPage();}
     if (route === "/suppliers") {await initSuppliersPage();}
+    if (route === "/parts-inventory") {await initInventoryItemsPage();}
     console.log(`Page Router: loaded ${route}`);
 
   } catch (error) {

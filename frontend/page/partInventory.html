@@ -1,1 +1,508 @@
-<h1>part inventory</h1>
+<section class="inventoryItemsPage" aria-labelledby="inventoryItemsTitle">
+  <header class="pageHeader">
+    <div class="pageHeaderContent">
+      <h1 id="inventoryItemsTitle">Inventory Items</h1>
+      <p>Manage motorcycle parts, accessories, and inventory information.</p>
+    </div>
+
+    <button
+      class="primaryButton"
+      type="button"
+      id="createInventoryItemButton"
+    >
+      Create
+    </button>
+  </header>
+
+  <section
+    class="inventoryItemsSection"
+    aria-labelledby="inventoryItemsListTitle"
+  >
+    <header class="sectionHeader">
+      <h2 id="inventoryItemsListTitle">All Inventory Items</h2>
+    </header>
+
+    <div class="tableContainer">
+      <table class="inventoryItemsTable">
+        <thead>
+          <tr>
+            <th scope="col">Supplier</th>
+            <th scope="col">Item Name</th>
+            <th scope="col">Item Code</th>
+            <th scope="col">Category</th>
+            <th scope="col">Brand</th>
+            <th scope="col">Motorcycle Fitment</th>
+            <th scope="col">Cost Price</th>
+            <th scope="col">Selling Price</th>
+          </tr>
+        </thead>
+
+        <tbody id="inventoryItemsTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+</section>
+
+
+<!-- CREATE INVENTORY ITEM DIALOG -->
+<dialog
+  class="inventoryItemModal"
+  id="inventoryItemModal"
+>
+  <form
+    class="inventoryItemForm"
+    id="inventoryItemForm"
+  >
+    <div class="formPadding">
+
+      <header class="modalHeader">
+        <div>
+          <h2>Create Inventory Item</h2>
+          <p>Enter the inventory item details.</p>
+        </div>
+
+        <button
+          class="modalCloseButton"
+          type="button"
+          id="closeInventoryItemModal"
+          aria-label="Close modal"
+        >
+          &times;
+        </button>
+      </header>
+
+      <div class="modalBody">
+
+        <!-- SUPPLIER -->
+        <div class="formGroup">
+          <label for="supplierId">
+            Supplier
+          </label>
+
+          <select
+            id="supplierId"
+            name="supplierId"
+          >
+            <option
+              value=""
+              selected
+            >
+              Select supplier
+            </option>
+          </select>
+        </div>
+
+        <div class="formGroup">
+          <label for="supplierNotFound">
+            <input
+              type="checkbox"
+              id="supplierNotFound"
+              name="supplierNotFound"
+            >
+            Supplier not found?
+          </label>
+        </div>
+
+        <div
+          id="newSupplierFields"
+          hidden
+        >
+          <div class="formGroup">
+            <label for="supplierName">
+              Supplier Name
+            </label>
+
+            <input
+              type="text"
+              id="supplierName"
+              name="supplierName"
+              placeholder="Enter supplier name"
+              maxlength="150"
+              disabled
+            >
+          </div>
+
+          <div class="formGroup">
+            <label for="supplierContactNo">
+              Supplier Contact Number
+            </label>
+
+            <input
+              type="text"
+              id="supplierContactNo"
+              name="supplierContactNo"
+              placeholder="Enter contact number"
+              maxlength="20"
+              disabled
+            >
+          </div>
+        </div>
+
+        <!-- ITEM DETAILS -->
+        <div class="formGroup">
+          <label for="itemName">
+            Item Name
+          </label>
+
+          <input
+            type="text"
+            id="itemName"
+            name="itemName"
+            placeholder="Enter item name"
+            maxlength="150"
+            required
+          >
+        </div>
+
+        <div class="formGroup">
+          <label for="itemCode">
+            Item Code
+          </label>
+
+          <input
+            type="text"
+            id="itemCode"
+            name="itemCode"
+            placeholder="Enter item code"
+            maxlength="100"
+          >
+        </div>
+
+        <div class="formGroup">
+          <label for="itemCategory">
+            Item Category
+          </label>
+
+          <input
+            type="text"
+            id="itemCategory"
+            name="itemCategory"
+            placeholder="Enter item category"
+            maxlength="100"
+          >
+        </div>
+
+        <div class="formGroup">
+          <label for="brand">
+            Brand
+          </label>
+
+          <input
+            type="text"
+            id="brand"
+            name="brand"
+            placeholder="Enter brand"
+            maxlength="100"
+          >
+        </div>
+
+        <div class="formGroup">
+          <label for="motorcycleFitment">
+            Motorcycle Fitment
+          </label>
+
+          <input
+            type="text"
+            id="motorcycleFitment"
+            name="motorcycleFitment"
+            placeholder="Enter compatible motorcycle"
+            maxlength="255"
+          >
+        </div>
+
+        <div class="formGroup">
+          <label for="costPrice">
+            Cost Price
+          </label>
+
+          <input
+            type="number"
+            id="costPrice"
+            name="costPrice"
+            placeholder="Enter cost price"
+            min="0"
+            step="0.01"
+            required
+          >
+        </div>
+
+        <div class="formGroup">
+          <label for="sellingPrice">
+            Selling Price
+          </label>
+
+          <input
+            type="number"
+            id="sellingPrice"
+            name="sellingPrice"
+            placeholder="Enter selling price"
+            min="0"
+            step="0.01"
+            required
+          >
+        </div>
+
+      </div>
+
+      <footer class="modalFooter">
+
+        <button
+          class="secondaryButton"
+          type="button"
+          id="cancelInventoryItemButton"
+        >
+          Cancel
+        </button>
+
+        <button
+          class="primaryButton"
+          type="submit"
+          id="submitInventoryItemButton"
+        >
+          Create
+        </button>
+
+      </footer>
+
+    </div>
+  </form>
+</dialog>
+
+
+<!-- EDIT INVENTORY ITEM DIALOG -->
+<dialog
+  class="inventoryItemModal"
+  id="editInventoryItemModal"
+>
+  <form
+    class="inventoryItemForm"
+    id="editInventoryItemForm"
+  >
+    <div class="formPadding">
+
+      <header class="modalHeader">
+        <div>
+          <h2>Edit Inventory Item</h2>
+          <p>Update the inventory item details.</p>
+        </div>
+
+        <button
+          class="modalCloseButton"
+          type="button"
+          id="closeEditInventoryItemModal"
+          aria-label="Close modal"
+        >
+          &times;
+        </button>
+      </header>
+
+      <div class="modalBody">
+
+        <input
+          type="hidden"
+          id="editInventoryItemId"
+          name="inventoryItemId"
+        >
+
+        <!-- SUPPLIER -->
+        <div class="formGroup">
+          <label for="editSupplierId">
+            Supplier
+          </label>
+
+          <select
+            id="editSupplierId"
+            name="supplierId"
+          >
+            <option
+              value=""
+              selected
+            >
+              Select supplier
+            </option>
+          </select>
+        </div>
+
+        <div class="formGroup">
+          <label for="editSupplierNotFound">
+            <input
+              type="checkbox"
+              id="editSupplierNotFound"
+              name="supplierNotFound"
+            >
+            Supplier not found?
+          </label>
+        </div>
+
+        <div
+          id="editNewSupplierFields"
+          hidden
+        >
+          <div class="formGroup">
+            <label for="editSupplierName">
+              Supplier Name
+            </label>
+
+            <input
+              type="text"
+              id="editSupplierName"
+              name="supplierName"
+              placeholder="Enter supplier name"
+              maxlength="150"
+              disabled
+            >
+          </div>
+
+          <div class="formGroup">
+            <label for="editSupplierContactNo">
+              Supplier Contact Number
+            </label>
+
+            <input
+              type="text"
+              id="editSupplierContactNo"
+              name="supplierContactNo"
+              placeholder="Enter contact number"
+              maxlength="20"
+              disabled
+            >
+          </div>
+        </div>
+
+        <!-- ITEM DETAILS -->
+        <div class="formGroup">
+          <label for="editItemName">
+            Item Name
+          </label>
+
+          <input
+            type="text"
+            id="editItemName"
+            name="itemName"
+            placeholder="Enter item name"
+            maxlength="150"
+            required
+          >
+        </div>
+
+        <div class="formGroup">
+          <label for="editItemCode">
+            Item Code
+          </label>
+
+          <input
+            type="text"
+            id="editItemCode"
+            name="itemCode"
+            placeholder="Enter item code"
+            maxlength="100"
+          >
+        </div>
+
+        <div class="formGroup">
+          <label for="editItemCategory">
+            Item Category
+          </label>
+
+          <input
+            type="text"
+            id="editItemCategory"
+            name="itemCategory"
+            placeholder="Enter item category"
+            maxlength="100"
+          >
+        </div>
+
+        <div class="formGroup">
+          <label for="editBrand">
+            Brand
+          </label>
+
+          <input
+            type="text"
+            id="editBrand"
+            name="brand"
+            placeholder="Enter brand"
+            maxlength="100"
+          >
+        </div>
+
+        <div class="formGroup">
+          <label for="editMotorcycleFitment">
+            Motorcycle Fitment
+          </label>
+
+          <input
+            type="text"
+            id="editMotorcycleFitment"
+            name="motorcycleFitment"
+            placeholder="Enter compatible motorcycle"
+            maxlength="255"
+          >
+        </div>
+
+        <div class="formGroup">
+          <label for="editCostPrice">
+            Cost Price
+          </label>
+
+          <input
+            type="number"
+            id="editCostPrice"
+            name="costPrice"
+            placeholder="Enter cost price"
+            min="0"
+            step="0.01"
+            required
+          >
+        </div>
+
+        <div class="formGroup">
+          <label for="editSellingPrice">
+            Selling Price
+          </label>
+
+          <input
+            type="number"
+            id="editSellingPrice"
+            name="sellingPrice"
+            placeholder="Enter selling price"
+            min="0"
+            step="0.01"
+            required
+          >
+        </div>
+
+      </div>
+
+      <footer class="modalFooter">
+
+        <button
+          class="dangerButton"
+          type="button"
+          id="deleteInventoryItemButton"
+        >
+          Delete
+        </button>
+
+        <button
+          class="secondaryButton"
+          type="button"
+          id="cancelEditInventoryItemButton"
+        >
+          Cancel
+        </button>
+
+        <button
+          class="primaryButton"
+          type="submit"
+          id="saveInventoryItemButton"
+        >
+          Save Changes
+        </button>
+
+      </footer>
+
+    </div>
+  </form>
+</dialog>

@@ -75,8 +75,8 @@ async function loadSuppliers() {
   });
 }
 
-// TOGGLE NEW SUPPLIER FIELDS
-function toggleNewSupplierFields(isEdit = false) {
+// CONFIGURE SUPPLIER FIELDS
+function configureSupplierFields(isEdit = false) {
   const supplierNotFound = document.getElementById(
     isEdit ? "editSupplierNotFound" : "supplierNotFound"
   );
@@ -89,51 +89,75 @@ function toggleNewSupplierFields(isEdit = false) {
     isEdit ? "editNewSupplierFields" : "newSupplierFields"
   );
 
-  if (!supplierNotFound || !supplierSelect || !newSupplierFields) {
-    console.error("Inventory Items: Supplier fields were not found.");
+  const supplierName = document.getElementById(
+    isEdit ? "editSupplierName" : "supplierName"
+  );
+
+  const supplierContactNo = document.getElementById(
+    isEdit ? "editSupplierContactNo" : "supplierContactNo"
+  );
+
+  const requiredElements = [
+    supplierNotFound,
+    supplierSelect,
+    newSupplierFields,
+    supplierName,
+    supplierContactNo
+  ];
+
+  if (requiredElements.some((element) => !element)) {
+    console.error("Inventory Items: Supplier form elements were not found.");
     return;
   }
 
   const isNewSupplier = supplierNotFound.checked;
 
   supplierSelect.disabled = isNewSupplier;
+  supplierSelect.required = !isNewSupplier;
+
   newSupplierFields.hidden = !isNewSupplier;
 
-  if (!isNewSupplier) {
-    const supplierName = document.getElementById(
-      isEdit ? "editSupplierName" : "supplierName"
-    );
+  supplierName.required = isNewSupplier;
+  supplierContactNo.required = isNewSupplier;
 
-    const supplierContactNo = document.getElementById(
-      isEdit ? "editSupplierContactNo" : "supplierContactNo"
-    );
-
-    if (supplierName) {
-      supplierName.value = "";
-    }
-
-    if (supplierContactNo) {
-      supplierContactNo.value = "";
-    }
-  }
+  supplierName.disabled = !isNewSupplier;
+  supplierContactNo.disabled = !isNewSupplier;
 }
 
-// OPEN CREATE INVENTORY ITEM
-function openCreateInventoryItem() {
-  const inventoryItemModal = document.getElementById("inventoryItemModal");
-  const inventoryItemForm = document.getElementById("inventoryItemForm");
-  const supplierNotFound = document.getElementById("supplierNotFound");
+// GET SUPPLIER FORM DATA
+function getSupplierFormData(formData, isEdit = false) {
+  const supplierNotFound = document.getElementById(
+    isEdit ? "editSupplierNotFound" : "supplierNotFound"
+  );
 
-  if (!inventoryItemModal || !inventoryItemForm || !supplierNotFound) {
-    console.error("Inventory Items: Create inventory item elements were not found.");
-    return;
+  const supplierSelect = document.getElementById(
+    isEdit ? "editSupplierId" : "supplierId"
+  );
+
+  const supplierName = document.getElementById(
+    isEdit ? "editSupplierName" : "supplierName"
+  );
+
+  const supplierContactNo = document.getElementById(
+    isEdit ? "editSupplierContactNo" : "supplierContactNo"
+  );
+
+  if (!supplierNotFound || !supplierSelect || !supplierName || !supplierContactNo) {
+    throw new Error("Inventory item supplier fields were not found.");
   }
 
-  inventoryItemForm.reset();
-  supplierNotFound.checked = false;
-  toggleNewSupplierFields();
+  if (supplierNotFound.checked) {
+    formData.supplierId = null;
+    formData.supplierName = supplierName.value.trim();
+    formData.supplierContactNo = supplierContactNo.value.trim();
+  }
+  else {
+    formData.supplierId = supplierSelect.value;
+    formData.supplierName = null;
+    formData.supplierContactNo = null;
+  }
 
-  inventoryItemModal.showModal();
+  return formData;
 }
 
 // OPEN EDIT INVENTORY ITEM
@@ -143,6 +167,8 @@ function openEditInventoryItem(inventoryItem) {
   const editInventoryItemId = document.getElementById("editInventoryItemId");
   const editSupplierId = document.getElementById("editSupplierId");
   const editSupplierNotFound = document.getElementById("editSupplierNotFound");
+  const editSupplierName = document.getElementById("editSupplierName");
+  const editSupplierContactNo = document.getElementById("editSupplierContactNo");
   const editItemName = document.getElementById("editItemName");
   const editItemCode = document.getElementById("editItemCode");
   const editItemCategory = document.getElementById("editItemCategory");
@@ -157,6 +183,8 @@ function openEditInventoryItem(inventoryItem) {
     editInventoryItemId,
     editSupplierId,
     editSupplierNotFound,
+    editSupplierName,
+    editSupplierContactNo,
     editItemName,
     editItemCode,
     editItemCategory,
@@ -176,13 +204,13 @@ function openEditInventoryItem(inventoryItem) {
     return;
   }
 
+  editInventoryItemForm.reset();
+
   editInventoryItemId.value = inventoryItem.inventoryItemId ?? "";
   editSupplierId.value = inventoryItem.supplierId ?? "";
   editSupplierNotFound.checked = false;
-
-  document.getElementById("editSupplierName").value = "";
-  document.getElementById("editSupplierContactNo").value = "";
-
+  editSupplierName.value = "";
+  editSupplierContactNo.value = "";
   editItemName.value = inventoryItem.itemName ?? "";
   editItemCode.value = inventoryItem.itemCode ?? "";
   editItemCategory.value = inventoryItem.itemCategory ?? "";
@@ -191,7 +219,8 @@ function openEditInventoryItem(inventoryItem) {
   editCostPrice.value = inventoryItem.costPrice ?? "";
   editSellingPrice.value = inventoryItem.sellingPrice ?? "";
 
-  toggleNewSupplierFields(true);
+  configureSupplierFields(true);
+
   editInventoryItemModal.showModal();
 }
 
@@ -202,21 +231,6 @@ function createTableCell(value) {
   cell.textContent = value ?? "—";
 
   return cell;
-}
-
-// FORMAT PRICE
-function formatPrice(value) {
-  if (value === null || value === undefined || value === "") {
-    return "—";
-  }
-
-  const price = Number(value);
-
-  if (!Number.isFinite(price)) {
-    return "—";
-  }
-
-  return price.toFixed(2);
 }
 
 // CREATE INVENTORY ITEM ROW
@@ -231,8 +245,8 @@ function createInventoryItemRow(inventoryItem) {
   row.appendChild(createTableCell(inventoryItem.itemCategory));
   row.appendChild(createTableCell(inventoryItem.brand));
   row.appendChild(createTableCell(inventoryItem.motorcycleFitment));
-  row.appendChild(createTableCell(formatPrice(inventoryItem.costPrice)));
-  row.appendChild(createTableCell(formatPrice(inventoryItem.sellingPrice)));
+  row.appendChild(createTableCell(inventoryItem.costPrice));
+  row.appendChild(createTableCell(inventoryItem.sellingPrice));
 
   row.addEventListener("click", () => {
     openEditInventoryItem(inventoryItem);
@@ -317,6 +331,23 @@ async function loadInventoryItems() {
   }
 }
 
+// OPEN CREATE INVENTORY ITEM
+function openCreateInventoryItem() {
+  const inventoryItemModal = document.getElementById("inventoryItemModal");
+  const inventoryItemForm = document.getElementById("inventoryItemForm");
+
+  if (!inventoryItemModal || !inventoryItemForm) {
+    console.error("Inventory Items: Create inventory item elements were not found.");
+    return;
+  }
+
+  inventoryItemForm.reset();
+
+  configureSupplierFields();
+
+  inventoryItemModal.showModal();
+}
+
 // CLOSE DIALOG
 function closeDialog(dialogId) {
   const dialog = document.getElementById(dialogId);
@@ -329,38 +360,18 @@ function closeDialog(dialogId) {
   dialog.close();
 }
 
-// PREPARE INVENTORY ITEM DATA
-function prepareInventoryItemData(form) {
-  const inventoryItemData = Object.fromEntries(
-    new FormData(form).entries()
-  );
-
-  const isNewSupplier = form.id === "inventoryItemForm"
-    ? document.getElementById("supplierNotFound").checked
-    : document.getElementById("editSupplierNotFound").checked;
-
-  if (isNewSupplier) {
-    inventoryItemData.supplierId = null;
-  }
-  else {
-    inventoryItemData.supplierName = null;
-    inventoryItemData.supplierContactNo = null;
-  }
-
-  delete inventoryItemData.supplierNotFound;
-  delete inventoryItemData.editSupplierNotFound;
-
-  return inventoryItemData;
-}
-
 // CREATE INVENTORY ITEM
 async function createInventoryItem(event) {
   event.preventDefault();
 
   const inventoryItemForm = event.currentTarget;
-  const inventoryItemData = prepareInventoryItemData(inventoryItemForm);
+  const inventoryItemData = Object.fromEntries(
+    new FormData(inventoryItemForm).entries()
+  );
 
   try {
+    getSupplierFormData(inventoryItemData);
+
     const response = await fetch("/api/inventory-items", {
       method: "POST",
       credentials: "same-origin",
@@ -379,9 +390,9 @@ async function createInventoryItem(event) {
 
     closeDialog("inventoryItemModal");
     inventoryItemForm.reset();
-    toggleNewSupplierFields();
 
-    await loadSuppliers();
+    configureSupplierFields();
+
     await loadInventoryItems();
   }
   catch (error) {
@@ -399,7 +410,9 @@ async function updateInventoryItem(event) {
   event.preventDefault();
 
   const inventoryItemForm = event.currentTarget;
-  const inventoryItemData = prepareInventoryItemData(inventoryItemForm);
+  const inventoryItemData = Object.fromEntries(
+    new FormData(inventoryItemForm).entries()
+  );
 
   if (!inventoryItemData.inventoryItemId) {
     showError("Inventory item ID was not found.");
@@ -407,6 +420,8 @@ async function updateInventoryItem(event) {
   }
 
   try {
+    getSupplierFormData(inventoryItemData, true);
+
     const response = await fetch(
       `/api/inventory-items/${inventoryItemData.inventoryItemId}`,
       {
@@ -428,7 +443,6 @@ async function updateInventoryItem(event) {
 
     closeDialog("editInventoryItemModal");
 
-    await loadSuppliers();
     await loadInventoryItems();
   }
   catch (error) {
@@ -529,6 +543,9 @@ export async function initInventoryItemsPage() {
     }
 
     await loadSuppliers();
+    configureSupplierFields();
+    configureSupplierFields(true);
+
     await loadInventoryItems();
 
     createButton.addEventListener("click", openCreateInventoryItem);
@@ -538,11 +555,11 @@ export async function initInventoryItemsPage() {
     cancelEditButton.addEventListener("click", () => closeDialog("editInventoryItemModal"));
 
     supplierNotFound.addEventListener("change", () => {
-      toggleNewSupplierFields();
+      configureSupplierFields();
     });
 
     editSupplierNotFound.addEventListener("change", () => {
-      toggleNewSupplierFields(true);
+      configureSupplierFields(true);
     });
 
     inventoryItemForm.addEventListener("submit", createInventoryItem);

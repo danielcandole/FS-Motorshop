@@ -1,1 +1,218 @@
-<h1>supplier</h1>
+<section class="suppliersPage" aria-labelledby="suppliersTitle">
+  <header class="pageHeader">
+    <div class="pageHeaderContent">
+      <h1 id="suppliersTitle">Suppliers</h1>
+      <p>Manage supplier information and contact details.</p>
+    </div>
+
+    <button
+      class="primaryButton"
+      type="button"
+      id="createSupplierButton"
+    >
+      Create
+    </button>
+  </header>
+
+  <section
+    class="suppliersSection"
+    aria-labelledby="suppliersListTitle"
+  >
+    <header class="sectionHeader">
+      <h2 id="suppliersListTitle">All Suppliers</h2>
+    </header>
+
+    <div class="tableContainer">
+      <table class="suppliersTable">
+        <thead>
+          <tr>
+            <th scope="col">Supplier Name</th>
+            <th scope="col">Contact Number</th>
+          </tr>
+        </thead>
+
+        <tbody id="suppliersTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+</section>
+
+
+<!-- CREATE SUPPLIER DIALOG -->
+<dialog class="supplierModal" id="supplierModal">
+  <form class="supplierForm" id="supplierForm">
+    <div class="formPadding">
+
+      <header class="modalHeader">
+        <div>
+          <h2>Create Supplier</h2>
+          <p>Enter the supplier's information.</p>
+        </div>
+
+        <button
+          class="modalCloseButton"
+          type="button"
+          id="closeSupplierModal"
+          aria-label="Close modal"
+        >
+          &times;
+        </button>
+      </header>
+
+      <div class="modalBody">
+
+        <div class="formGroup">
+          <label for="supplierName">
+            Supplier Name
+          </label>
+
+          <input
+            type="text"
+            id="supplierName"
+            name="supplierName"
+            placeholder="Enter supplier name"
+            maxlength="150"
+            required
+          >
+        </div>
+
+        <div class="formGroup">
+          <label for="supplierContactNo">
+            Contact Number
+          </label>
+
+          <input
+            type="text"
+            id="supplierContactNo"
+            name="supplierContactNo"
+            placeholder="Enter contact number"
+            maxlength="20"
+            required
+          >
+        </div>
+
+      </div>
+
+      <footer class="modalFooter">
+
+        <button
+          class="secondaryButton"
+          type="button"
+          id="cancelSupplierButton"
+        >
+          Cancel
+        </button>
+
+        <button
+          class="primaryButton"
+          type="submit"
+          id="submitSupplierButton"
+        >
+          Create
+        </button>
+
+      </footer>
+
+    </div>
+  </form>
+</dialog>
+
+
+<!-- EDIT SUPPLIER DIALOG -->
+<dialog
+  class="supplierModal"
+  id="editSupplierModal"
+>
+  <form
+    class="supplierForm"
+    id="editSupplierForm"
+  >
+    <div class="formPadding">
+
+      <header class="modalHeader">
+        <div>
+          <h2>Edit Supplier</h2>
+          <p>Update the supplier's information.</p>
+        </div>
+
+        <button
+          class="modalCloseButton"
+          type="button"
+          id="closeEditSupplierModal"
+          aria-label="Close modal"
+        >
+          &times;
+        </button>
+      </header>
+
+      <div class="modalBody">
+
+        <input
+          type="hidden"
+          id="editSupplierId"
+          name="supplierId"
+        >
+
+        <div class="formGroup">
+          <label for="editSupplierName">
+            Supplier Name
+          </label>
+
+          <input
+            type="text"
+            id="editSupplierName"
+            name="supplierName"
+            placeholder="Enter supplier name"
+            maxlength="150"
+            required
+          >
+        </div>
+
+        <div class="formGroup">
+          <label for="editSupplierContactNo">
+            Contact Number
+          </label>
+
+          <input
+            type="text"
+            id="editSupplierContactNo"
+            name="supplierContactNo"
+            placeholder="Enter contact number"
+            maxlength="20"
+            required
+          >
+        </div>
+
+      </div>
+
+      <footer class="modalFooter">
+
+        <button
+          class="dangerButton"
+          type="button"
+          id="deleteSupplierButton"
+        >
+          Delete
+        </button>
+
+        <button
+          class="secondaryButton"
+          type="button"
+          id="cancelEditSupplierButton"
+        >
+          Cancel
+        </button>
+
+        <button
+          class="primaryButton"
+          type="submit"
+          id="saveSupplierButton"
+        >
+          Save Changes
+        </button>
+
+      </footer>
+
+    </div>
+  </form>
+</dialog>

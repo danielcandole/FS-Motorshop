@@ -1,51 +1,7 @@
 import { showError } from "../utils/message.js";
 import { formatDateTime } from "../utils/dateUtils.js";
-
-const allowedRoles = ["admin","manager", "assistant manager"];
-
-// LOAD LOGGED-IN EMPLOYEE
-async function loadLoggedEmployee() {
-  const response = await fetch("/api/auth/me", {
-    method: "GET",
-    credentials: "same-origin"
-  });
-
-  const result = await response.json();
-
-  if (!response.ok) {
-    throw new Error(result.message || "Failed to fetch logged-in employee.");
-  }
-
-  return result.employee ?? result;
-}
-
-// CONFIGURE ROLE PERMISSIONS
-function configureRolePermissions(role) {
-  const createButton = document.getElementById("createEmployeeButton");
-  const createPasswordGroup = document.getElementById("createPasswordGroup");
-  const password = document.getElementById("password");
-  const editPasswordGroup = document.getElementById("editPasswordGroup");
-  const editPassword = document.getElementById("editPassword");
-  const deleteButton = document.getElementById("deleteEmployeeButton");
-
-  if (!createButton || !createPasswordGroup || !password || !editPasswordGroup || !editPassword || !deleteButton) {
-    throw new Error("Employee permission elements were not found.");
-  }
-
-  const canManageEmployees = role === "admin" || role === "manager" || role === "assistant manager";
-  const canChangePassword = role === "admin" || role === "manager";
-  const canDeleteEmployees = role === "admin" || role === "manager";
-
-  createButton.hidden = !canManageEmployees;
-  createPasswordGroup.hidden = !canManageEmployees;
-  password.required = canManageEmployees;
-
-  editPasswordGroup.hidden = !canChangePassword;
-  editPassword.disabled = !canChangePassword;
-
-  deleteButton.hidden = !canDeleteEmployees;
-}
-
+import { configureRolePermissions, isEmployeeAllowed } from "../utils/roles.js";
+import { loadLoggedEmployee } from "../utils/employee.js";
 
 // LOAD EMPLOYEE ROLES
 async function loadEmployeeRoles() {
@@ -320,7 +276,7 @@ export async function initEmployeesPage() {
     console.log("role: ", employeeRole);
 
 
-    if (!allowedRoles.includes(employeeRole)) {
+    if (!isEmployeeAllowed(employeeRole)) {
       showError("You are not authorized to access employees.");
       return;
     }

@@ -42,6 +42,6 @@ export function isOptionalString(value) {
 }
 
 export function isNumericString(value) {
-  return (typeof value === "string" && /^\d+$/.test(value));
+  return (typeof value === "string" && /^\d+(\.\d+)?$/.test(value));
 }
 

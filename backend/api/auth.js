@@ -26,8 +26,10 @@ import {
 } from "../controllers/inventoryItemController.js";
 
 export async function handleAuthRoute(request, response, body) {
+  
   const pathname = new URL(request.url, `http://${request.headers.host}`).pathname;
   console.log("API Request:", request.method, JSON.stringify(pathname));
+
   if (pathname === "/api/auth/login" && request.method === "POST") {
     await login(request, response, body);
     return true;

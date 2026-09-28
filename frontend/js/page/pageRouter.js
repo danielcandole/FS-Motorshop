@@ -22,8 +22,7 @@ const routes = {
   "/parts-inventory": "/page/partInventory.html",
   "/stock-transaction": "/page/stockTransaction.html",
   "/suppliers": "/page/supplier.html",
-  "/supplies": "/page/supplies.html",
-
+  
   // Financial Management
   "/billing": "/page/billing.html",
   "/payments": "/page/payment.html",

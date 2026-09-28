@@ -3,48 +3,8 @@ import { authenticate } from "../middleware/authenticationMiddleware.js";
 import { authorized, canManageEmployeeTarget } from "../middleware/authorizationMiddleware.js";
 import {createEmployeeData, readEmployeeData, updateEmployeeData, deleteEmployeeData, getEmployeeRole, updateEmployeePassword} from "../services/employeeService.js";
 import { getRoleTarget } from "../services/authorizationService.js";
-import { sendJson } from "../../frontend/js/utils/jsonUtils.js";
+import { sendJson, sendForbidden, sendNotFound, sendValidationError } from "../../frontend/js/utils/jsonUtils.js";
 
-function sendForbidden(response) {
-  sendJson(response, 403, {message: "You do not have permission to perform this operation."});
-}
-
-function sendNotFound(response) {
-  sendJson(response, 404, {message: "Employee not found."});
-}
-
-function sendValidationError(response, errors) {
-  sendJson(response, 400, {message: errors.join("\n")});
-}
-
-
-export async function handleReadEmployeeRole(request, response) {
-  try {
-    const employee = await authenticate(request, response);
-
-    if (!employee) {
-      return;
-    }
-
-    if (!await authorized(request, response, "employee.create")) {
-      return;
-    }
-
-    const data = await getEmployeeRole();
-
-    sendJson(response, 200, {
-      message: "Employee roles retrieved successfully.",
-      data
-    });
-  }
-  catch (error) {
-    console.error("Read Employee Roles Controller:", error);
-
-    sendJson(response, 500, {
-      message: "Internal server error."
-    });
-  }
-}
 
 // CREATE EMPLOYEE
 export async function handleCreateEmployee(request, response) {
@@ -68,6 +28,34 @@ export async function handleCreateEmployee(request, response) {
   }
   catch (error) {
     console.error("Create Employee Controller:", error);
+
+    sendJson(response, 500, {
+      message: "Internal server error."
+    });
+  }
+}
+
+export async function handleReadEmployeeRole(request, response) {
+  try {
+    const employee = await authenticate(request, response);
+
+    if (!employee) {
+      return;
+    }
+
+    if (!await authorized(request, response, "employee.create")) {
+      return;
+    }
+
+    const data = await getEmployeeRole();
+
+    sendJson(response, 200, {
+      message: "Employee roles retrieved successfully.",
+      data
+    });
+  }
+  catch (error) {
+    console.error("Read Employee Roles Controller:", error);
 
     sendJson(response, 500, {
       message: "Internal server error."

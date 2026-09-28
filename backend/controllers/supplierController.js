@@ -24,7 +24,7 @@ export async function handleCreateSupplier(request, response) {
     const data = await createSupplierData(request);
 
     sendJson(response, 201, {
-      message: "Supplier created successfully.",
+      message: "Supplier created successfully.",  
       data
     });
   }

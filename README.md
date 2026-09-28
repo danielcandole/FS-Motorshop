@@ -1,119 +1,104 @@
 # FS MOTORSHOP
 
-FS MOTORSHOP is a motorcycle repair shop management system using:
+FS MOTORSHOP is a motorcycle repair shop management system built using:
 
 - HTML
-- JavaScript
+- Vanilla JavaScript
 - SCSS
-- Sass
-- PHP
+- Node.js
 
-Vite is not used.
+The project uses a native Node.js server and does not use frontend frameworks or Vite.
 
 ## Requirements
 
-Install:
+Install the following:
 
 - Node.js
 - npm
-- PHP
 
-Check Node.js and npm:
+Check your Node.js and npm versions:
 
 ```bash
 node --version
 npm --version
-````
-
-Check PHP:
-
-```bash
-php --version
 ```
 
 ## Project Setup
 
-From the project root:
+Clone the repository and navigate to the project root:
 
 ```bash
+git clone <repository-url>
 cd FS-Motorshop
 ```
 
-Initialize npm:
+Install the project dependencies:
 
 ```bash
-npm init -y
+npm install
 ```
 
-This creates:
+This installs the packages listed in `package.json`, including:
 
-```text
-package.json
-```
+- **Sass** — Compiles SCSS into CSS.
+- **Concurrently** — Runs the Sass compiler and Node.js server simultaneously.
+- **bcrypt** — Provides password hashing.
+- **mysql2** — Provides MySQL database connectivity.
 
-## Install Sass and Concurrently
+## Environment Configuration
 
-Install Sass:
+The Node.js server uses a `.env` file for environment variables.
+
+Create a `.env` file in the project root:
 
 ```bash
-npm install --save-dev sass
+touch .env
 ```
 
-Install Concurrently:
+Configure the environment variables required by the server.
 
-```bash
-npm install --save-dev concurrently
-```
+Do not commit sensitive credentials or other secrets to the repository.
 
-Concurrently allows Sass and PHP to run at the same time.
+## Available Scripts
 
-## Configure package.json
+The project provides the following npm scripts:
 
-Use:
-
-```json
-{
-  "name": "fs-motorshop",
-  "version": "1.0.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "sass": "sass --watch frontend/scss/main.scss frontend/css/main.css",
-    "server": "node server/devServer.js",
-    "dev": "concurrently npm:sass npm:server"
-  },
-  "devDependencies": {
-    "concurrently": "^10.0.5",
-    "sass": "^1.104.0"
-  }
-}
-```
-
-The installed package versions are added automatically by npm.
+| Command | Description |
+|---|---|
+| `npm run sass` | Watches and compiles SCSS files into CSS. |
+| `npm run server` | Starts the Node.js development server with automatic restarts. |
+| `npm run dev` | Runs the Sass compiler and Node.js server simultaneously. |
 
 ## Run the Project
 
-From the project root:
+Start the development environment:
 
 ```bash
 npm run dev
 ```
 
-This starts both processes:
+This starts both the Sass compiler and the Node.js development server.
 
 ```text
-npm run dev
-    │
-    ├── Sass
-    │     └── frontend/scss/main.scss
-    │             ↓
-    │       public/css/main.css
-    │
-    └── PHP
-          └── localhost:8000
+                 npm run dev
+                      |
+             +--------+--------+
+             |                 |
+          Sass              Node.js
+             |                 |
+        SCSS Watch        Development Server
+             |                 |
+       main.scss          server/server.js
+             |                 |
+             v                 v
+        main.css          localhost:8000
 ```
 
-Open the project in your browser:
+The Sass compiler automatically recompiles your SCSS files whenever changes are detected.
+
+The Node.js development server automatically restarts when server files change.
+
+Open the application in your browser:
 
 ```text
 http://localhost:8000

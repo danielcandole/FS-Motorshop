@@ -61,6 +61,7 @@ export async function readSupplierData() {
         supplierName,
         supplierContactNo
       FROM supplier
+      WHERE deletedAt IS NULL
       ORDER BY supplierId DESC
     `);
 

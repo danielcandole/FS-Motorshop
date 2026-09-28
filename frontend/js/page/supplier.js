@@ -1,5 +1,5 @@
 import { showError } from "../utils/message.js";
-import { configureRolePermissions, isEmployeeAllowed } from "../utils/roles.js";
+import { isEmployeeAllowed } from "../utils/roles.js";
 import { loadLoggedEmployee } from "../utils/employee.js";
 
 // OPEN EDIT SUPPLIER
@@ -333,8 +333,6 @@ export async function initSuppliersPage() {
       showError("You are not authorized to access suppliers.");
       return;
     }
-
-    configureRolePermissions(employeeRole);
 
     await loadSuppliers();
 

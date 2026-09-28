@@ -2,7 +2,7 @@ import { initLoginForm } from "../auth/login.js";
 import { initLogoutBtn } from "../auth/logout.js";
 import { initJobOrdersPage } from "./jobOrder.js";
 import { initEmployeesPage } from "./employee.js";
-
+import { initSuppliersPage } from "./supplier.js";
 
 const routes = {
   "/login": "/auth/login.html",
@@ -95,6 +95,8 @@ async function loadPage(route) {
 
     if (route === "/login") {initLoginForm();}
     if (route === "/job-orders") {await initJobOrdersPage();}
+    if (route === "/employee") {await initEmployeesPage();}
+    if (route === "/suppliers") {await initSuppliersPage();}
     console.log(`Page Router: loaded ${route}`);
 
   } catch (error) {
@@ -135,11 +137,6 @@ export async function navigate() {
     }
 
     await loadPage(route);
-
-    // Initialize the employee page after its HTML is loaded.
-    if (route === "/employee") {
-      await initEmployeesPage();
-    }
   }
   catch (error) {
     console.error("Page Router navigation failed:", error);

@@ -2,7 +2,7 @@ import { validateSupplierInput, validateSupplierUpdateInput, validateSupplierId 
 import { authenticate } from "../middleware/authenticationMiddleware.js";
 import { authorized } from "../middleware/authorizationMiddleware.js";
 import { createSupplierData, readSupplierData, updateSupplierData, deleteSupplierData } from "../services/supplierService.js";
-import { sendJson, sendForbidden, sendNotFound, sendValidationError } from "../../frontend/js/utils/jsonUtils.js";
+import { sendJson, sendNotFound, sendValidationError } from "../../frontend/js/utils/jsonUtils.js";
 
 // CREATE SUPPLIER
 export async function handleCreateSupplier(request, response) {

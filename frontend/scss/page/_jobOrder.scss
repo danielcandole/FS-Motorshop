@@ -1,8 +1,105 @@
 @use "../abstracts/variables" as *;
 
-.jobOrdersTableHeader {
-  tbody {
-    tr {
+.jobOrdersPage {
+  width: 100%;
+  max-width: 1200px;
+  box-sizing: border-box;
+}
+
+.jobOrdersSection {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.jobOrdersList {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-width: 1200px;
+  box-sizing: border-box;
+}
+
+.jobOrderCard {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 24px;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  background-color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+
+  .jobOrderCardHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e5e5e5;
+
+    h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+  }
+
+  .jobOrderCardActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .jobOrderInformation {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 24px;
+    padding: 20px 0;
+
+    .jobOrderDetail {
+      margin: 0;
+      overflow-wrap: anywhere;
+      line-height: 1.5;
+
+      strong {
+        font-weight: 600;
+      }
+    }
+
+    .jobOrderDetail:last-child {
+      grid-column: 1 / -1;
+    }
+  }
+
+  .jobOrderService,
+  .jobOrderItems {
+    margin-top: 20px;
+
+    h4 {
+      margin: 0 0 12px;
+      font-size: 15px;
+      font-weight: 600;
+    }
+  }
+
+  .jobOrderDetailsTable {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+
+    th,
+    td {
+      padding: 12px 16px;
+      text-align: left;
+      border: 1px solid #e5e5e5;
+    }
+
+    th {
+      background-color: #f9fafb;
+      font-weight: 600;
+    }
+
+    tbody tr {
       transition: background-color 150ms ease;
 
       &:hover {
@@ -10,92 +107,77 @@
       }
     }
   }
-  border-collapse: collapse;
-  border-spacing: 0;
-
-  th,
-  td {
-    padding-left: 0;
-    padding-right: 0;
-  }
 }
 
+
 .jobOrderModal {
-  box-sizing: border-box;
-  width: min(600px, calc(100% - 32px));
-  max-height: 90vh;
-  padding: 20px 0;
-  border: none;
-  border-radius: 12px;
-  overflow: hidden;
-
-  &::backdrop {
-    background: rgba(0, 0, 0, 0.55);
-    backdrop-filter: blur(3px);
-  }
-
-  .jobOrderForm {
-    box-sizing: border-box;
-    width: 100%;
-    max-height: calc(90vh - 40px);
-    overflow-y: auto;
-    overflow-x: hidden;
-
-    // Firefox
-    scrollbar-width: thin;
-    scrollbar-color: #c5c5c5 transparent;
-
-    // Chromium, Safari, and other WebKit-based browsers
-    &::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    &::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    &::-webkit-scrollbar-thumb {
-      background: #c5c5c5;
-      border-radius: 10px;
-    }
-
-    &::-webkit-scrollbar-thumb:hover {
-      background: #999;
-    }
-  }
-
-  .formPadding {
-    box-sizing: border-box;
-    width: 100%;
-  }
+  width: min(900px, calc(100% - 32px));
 
   .modalHeader {
     display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 24px;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 20px 24px;
     border-bottom: 1px solid #e5e5e5;
-  }
 
-  .modalCloseButton {
-    border: none;
-    background: transparent;
-    font-size: 28px;
-    cursor: pointer;
+    h2 {
+      margin: 0;
+      font-size: 20px;
+      text-align: center;
+    }
+
+    .modalCloseButton {
+      position: absolute;
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
   }
 
   .modalBody {
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 28px;
     padding: 24px;
+  }
+
+  .formSection {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
+    & + .formSection {
+      padding-top: 24px;
+      border-top: 1px solid #e5e5e5;
+    }
+
+    .sectionHeader {
+      padding-bottom: 10px;
+      border-bottom: 1px solid #e5e5e5;
+
+      h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+      }
+    }
+  }
+
+  .formGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px 24px;
   }
 
   .formGroup {
     display: flex;
     flex-direction: column;
     gap: 8px;
+
+    label {
+      font-weight: 600;
+    }
 
     input,
     select,
@@ -113,11 +195,100 @@
     }
   }
 
-  .modalFooter {
+  .formGroupFull {
+    grid-column: 1 / -1;
+  }
+
+  .tableContainer {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .jobOrderItemsTable {
+    width: 100%;
+    border-collapse: collapse;
+
+    th,
+    td {
+      padding: 12px;
+      border: 1px solid #e5e5e5;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f9fafb;
+      font-weight: 600;
+    }
+
+    select,
+    input {
+      box-sizing: border-box;
+      width: 100%;
+      min-width: 100px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font: inherit;
+    }
+  }
+
+  .jobOrderItemsContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .jobOrderItemsHeader,
+  .jobOrderItemRow {
+    display: grid;
+    grid-template-columns:
+      minmax(0, 3fr)
+      minmax(0, 1fr)
+      minmax(0, 1fr)
+      100px;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .jobOrderItemsHeader {
+    padding: 0 12px;
+    font-weight: 600;
+
+    span {
+      min-width: 0;
+    }
+  }
+
+  .jobOrderItemRow {
+    > div {
+      min-width: 0;
+    }
+
+    .jobOrderItemInventory,
+    .jobOrderItemQuantity,
+    .jobOrderItemUnitPrice {
+      display: block;
+      box-sizing: border-box;
+      width: 100%;
+      min-width: 0;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font: inherit;
+    }
+
+    .removeJobOrderItemButton {
+      width: 100%;
+    }
+  }
+
+  .jobOrderItemsActions {
     display: flex;
     justify-content: flex-end;
-    gap: 12px;
-    padding: 20px 24px;
-    border-top: 1px solid #e5e5e5;
+    margin-top: 4px;
   }
 }

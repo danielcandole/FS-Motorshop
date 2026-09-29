@@ -320,8 +320,7 @@ function addJobOrderItem(inventoryItems, container, template, item = null) {
 }
 
 // GET JOB ORDER ITEMS
-function getJobOrderItems() {
-  const container = document.getElementById("jobOrderItemsTableBody");
+function getJobOrderItems(container) {
   const rows = container.querySelectorAll(".jobOrderItemRow");
 
   return Array.from(rows).map((row) => ({
@@ -549,7 +548,7 @@ async function createJobOrder(event, form, modal, itemsContainer) {
       serviceDescription: formData.get("serviceDescription"),
       laborCharge: Number(formData.get("laborCharge"))
     },
-    jobOrderItems: getJobOrderItems()
+    jobOrderItems: getJobOrderItems(itemsContainer)
   };
 
   try {
@@ -591,6 +590,7 @@ async function updateJobOrder(event, form, modal) {
 
   const formData = new FormData(form);
   const jobOrderId = formData.get("jobOrderId");
+  const editItemsContainer = document.getElementById("editJobOrderItemsTableBody");
 
   const jobOrderData = {
     customerName: formData.get("customerName"),
@@ -599,7 +599,13 @@ async function updateJobOrder(event, form, modal) {
     motorcycleModel: formData.get("motorcycleModel") || null,
     repairDate: formData.get("repairDate"),
     description: formData.get("description") || null,
-    repairStatus: formData.get("repairStatus")
+    repairStatus: formData.get("repairStatus"),
+    serviceRecord: {
+      serviceType: formData.get("serviceType"),
+      serviceDescription: formData.get("serviceDescription"),
+      laborCharge: Number(formData.get("laborCharge"))
+    },
+    jobOrderItems: getJobOrderItems(editItemsContainer)
   };
 
   try {

@@ -108,3 +108,187 @@
     }
   }
 }
+
+
+.jobOrderModal {
+  width: min(900px, calc(100% - 32px));
+
+  .modalHeader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e5e5e5;
+
+    h2 {
+      margin: 0;
+      font-size: 20px;
+      text-align: center;
+    }
+
+    .modalCloseButton {
+      position: absolute;
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+  }
+
+  .modalBody {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    padding: 24px;
+  }
+
+  .formSection {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
+    & + .formSection {
+      padding-top: 24px;
+      border-top: 1px solid #e5e5e5;
+    }
+
+    .sectionHeader {
+      padding-bottom: 10px;
+      border-bottom: 1px solid #e5e5e5;
+
+      h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+      }
+    }
+  }
+
+  .formGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px 24px;
+  }
+
+  .formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    label {
+      font-weight: 600;
+    }
+
+    input,
+    select,
+    textarea {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font: inherit;
+    }
+
+    textarea {
+      resize: vertical;
+    }
+  }
+
+  .formGroupFull {
+    grid-column: 1 / -1;
+  }
+
+  .tableContainer {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .jobOrderItemsTable {
+    width: 100%;
+    border-collapse: collapse;
+
+    th,
+    td {
+      padding: 12px;
+      border: 1px solid #e5e5e5;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f9fafb;
+      font-weight: 600;
+    }
+
+    select,
+    input {
+      box-sizing: border-box;
+      width: 100%;
+      min-width: 100px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font: inherit;
+    }
+  }
+
+  .jobOrderItemsContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .jobOrderItemsHeader,
+  .jobOrderItemRow {
+    display: grid;
+    grid-template-columns:
+      minmax(0, 3fr)
+      minmax(0, 1fr)
+      minmax(0, 1fr)
+      100px;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .jobOrderItemsHeader {
+    padding: 0 12px;
+    font-weight: 600;
+
+    span {
+      min-width: 0;
+    }
+  }
+
+  .jobOrderItemRow {
+    > div {
+      min-width: 0;
+    }
+
+    .jobOrderItemInventory,
+    .jobOrderItemQuantity,
+    .jobOrderItemUnitPrice {
+      display: block;
+      box-sizing: border-box;
+      width: 100%;
+      min-width: 0;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font: inherit;
+    }
+
+    .removeJobOrderItemButton {
+      width: 100%;
+    }
+  }
+
+  .jobOrderItemsActions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 4px;
+  }
+}

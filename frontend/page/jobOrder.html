@@ -276,130 +276,261 @@
   </form>
 </dialog>
 
-
 <dialog class="jobOrderModal" id="editJobOrderModal">
   <form class="jobOrderForm" id="editJobOrderForm">
-    <div class="formPadding">
-      <header class="modalHeader">
-        <div>
-          <h2>Edit Job Order</h2>
-          <p>Update the customer and motorcycle details.</p>
+    <header class="modalHeader">
+      <h2>UPDATE JOB ORDER</h2>
+
+      <button
+        class="modalCloseButton"
+        type="button"
+        id="closeEditJobOrderModal"
+        aria-label="Close modal"
+      >
+        &times;
+      </button>
+    </header>
+
+    <div class="modalBody">
+      <input
+        type="hidden"
+        id="editJobOrderId"
+        name="jobOrderId"
+      >
+
+      <!-- JOB ORDER -->
+      <section class="formSection" aria-labelledby="editJobOrderInformationTitle">
+        <header class="sectionHeader">
+          <h3 id="editJobOrderInformationTitle">
+            1. JOB ORDER
+          </h3>
+        </header>
+
+        <div class="formGrid">
+          <div class="formGroup">
+            <label for="editCustomerName">Customer</label>
+            <input
+              type="text"
+              id="editCustomerName"
+              name="customerName"
+              placeholder="Enter customer name"
+              required
+            >
+          </div>
+
+          <div class="formGroup">
+            <label for="editMotorcycleName">Motorcycle</label>
+            <input
+              type="text"
+              id="editMotorcycleName"
+              name="motorcycleName"
+              placeholder="Enter motorcycle name"
+              required
+            >
+          </div>
+
+          <div class="formGroup">
+            <label for="editCustomerContactNumber">Contact Number</label>
+            <input
+              type="text"
+              id="editCustomerContactNumber"
+              name="customerContactNumber"
+              placeholder="Enter contact number"
+              required
+            >
+          </div>
+
+          <div class="formGroup">
+            <label for="editMotorcycleModel">Model</label>
+            <input
+              type="text"
+              id="editMotorcycleModel"
+              name="motorcycleModel"
+              placeholder="Enter motorcycle model"
+            >
+          </div>
+
+          <div class="formGroup">
+            <label for="editRepairDate">Repair Date</label>
+            <input
+              type="datetime-local"
+              id="editRepairDate"
+              name="repairDate"
+              required
+            >
+          </div>
+
+          <div class="formGroup">
+            <label for="editRepairStatus">Repair Status</label>
+            <select
+              id="editRepairStatus"
+              name="repairStatus"
+              required
+            >
+              <option value="pending">Pending</option>
+              <option value="in-progress">In Progress</option>
+              <option value="done">Done</option>
+            </select>
+          </div>
+
+          <div class="formGroup formGroupFull">
+            <label for="editDescription">Reported Problem</label>
+            <textarea
+              id="editDescription"
+              name="description"
+              rows="4"
+              placeholder="Describe the customer's reported problem..."
+              required
+            ></textarea>
+          </div>
         </div>
+      </section>
 
-        <button
-          class="modalCloseButton"
-          type="button"
-          id="closeEditJobOrderModal"
-          aria-label="Close modal"
-        >
-          &times;
-        </button>
-      </header>
+      <!-- SERVICE -->
+      <section class="formSection" aria-labelledby="editServiceInformationTitle">
+        <header class="sectionHeader">
+          <h3 id="editServiceInformationTitle">
+            2. SERVICE
+          </h3>
+        </header>
 
-      <div class="modalBody">
-        <input
-          type="hidden"
-          id="editJobOrderId"
-          name="jobOrderId"
-        >
+        <div class="formGrid">
+          <div class="formGroup">
+            <label for="editServiceType">Service Type</label>
+            <input
+              type="text"
+              id="editServiceType"
+              name="serviceType"
+              placeholder="Enter service type"
+              required
+            >
+          </div>
 
-        <div class="formGroup">
-          <label for="editCustomerName">Customer Name</label>
-          <input
-            type="text"
-            id="editCustomerName"
-            name="customerName"
-            required
-          >
+          <div class="formGroup">
+            <label for="editLaborCharge">Labor Charge</label>
+            <input
+              type="number"
+              id="editLaborCharge"
+              name="laborCharge"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              required
+            >
+          </div>
+
+          <div class="formGroup formGroupFull">
+            <label for="editServiceDescription">Service Description</label>
+            <textarea
+              id="editServiceDescription"
+              name="serviceDescription"
+              rows="4"
+              placeholder="Describe the service to be performed..."
+              required
+            ></textarea>
+          </div>
         </div>
+      </section>
 
-        <div class="formGroup">
-          <label for="editCustomerContactNumber">Contact Number</label>
-          <input
-            type="text"
-            id="editCustomerContactNumber"
-            name="customerContactNumber"
-            required
-          >
+      <!-- PARTS -->
+      <section class="formSection" aria-labelledby="editPartsInventoryTitle">
+        <header class="sectionHeader">
+          <h3 id="editPartsInventoryTitle">
+            3. PARTS AND INVENTORY
+          </h3>
+        </header>
+
+        <div class="jobOrderItemsContainer">
+          <div class="jobOrderItemsHeader">
+            <span>Part</span>
+            <span>Quantity</span>
+            <span>Unit Price</span>
+            <span>Action</span>
+          </div>
+
+          <div
+            id="editJobOrderItemsTableBody"
+            class="jobOrderItemsList"
+          ></div>
+
+          <template id="editJobOrderItemTemplate">
+            <div class="jobOrderItemRow">
+              <div>
+                <select
+                  class="jobOrderItemInventory"
+                  name="inventoryItemId[]"
+                  required
+                >
+                  <option value="" selected disabled>
+                    Select Part
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <input
+                  class="jobOrderItemQuantity"
+                  type="number"
+                  name="quantityUsed[]"
+                  min="1"
+                  step="1"
+                  value="1"
+                  required
+                >
+              </div>
+
+              <div>
+                <input
+                  class="jobOrderItemUnitPrice"
+                  type="number"
+                  name="unitPrice[]"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  required
+                >
+              </div>
+
+              <div>
+                <button
+                  class="dangerButton removeJobOrderItemButton"
+                  type="button"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          </template>
+
+          <div class="jobOrderItemsActions">
+            <button
+              class="secondaryButton"
+              type="button"
+              id="addEditJobOrderItemButton"
+            >
+              + Add Part
+            </button>
+          </div>
         </div>
-
-        <div class="formGroup">
-          <label for="editMotorcycleName">Motorcycle Name</label>
-          <input
-            type="text"
-            id="editMotorcycleName"
-            name="motorcycleName"
-            required
-          >
-        </div>
-
-        <div class="formGroup">
-          <label for="editMotorcycleModel">Motorcycle Model</label>
-          <input
-            type="text"
-            id="editMotorcycleModel"
-            name="motorcycleModel"
-          >
-        </div>
-
-        <div class="formGroup">
-          <label for="editRepairDate">Repair Date & Time</label>
-          <input
-            type="datetime-local"
-            id="editRepairDate"
-            name="repairDate"
-            required
-          >
-        </div>
-
-        <div class="formGroup">
-          <label for="editDescription">Description</label>
-          <textarea
-            id="editDescription"
-            name="description"
-            rows="4"
-          ></textarea>
-        </div>
-
-        <div class="formGroup">
-          <label for="editRepairStatus">Repair Status</label>
-          <select
-            id="editRepairStatus"
-            name="repairStatus"
-            required
-          >
-            <option value="pending">Pending</option>
-            <option value="in-progress">In Progress</option>
-            <option value="done">Done</option>
-          </select>
-        </div>
-      </div>
-
-      <footer class="modalFooter">
-        <!-- <button
-          class="dangerButton"
-          type="button"
-          id="deleteJobOrderButton"
-        >
-          Delete
-        </button> -->
-
-        <button
-          class="secondaryButton"
-          type="button"
-          id="cancelEditJobOrderButton"
-        >
-          Cancel
-        </button>
-
-        <button
-          class="primaryButton"
-          type="submit"
-          id="saveJobOrderButton"
-        >
-          Save Changes
-        </button>
-      </footer>
+      </section>
     </div>
+
+    <footer class="modalFooter">
+      <button
+        class="secondaryButton"
+        type="button"
+        id="cancelEditJobOrderButton"
+      >
+        Cancel
+      </button>
+
+      <button
+        class="primaryButton"
+        type="submit"
+        id="saveJobOrderButton"
+      >
+        Save Changes
+      </button>
+    </footer>
   </form>
 </dialog>

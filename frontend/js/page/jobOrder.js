@@ -1,7 +1,7 @@
 import { setDefaultDate, dateFormat, toDateTimeLocalValue } from "../utils/dateUtils.js";
 
 // LOAD JOB ORDERS
-async function loadJobOrders() {
+async function loadJobOrders(inventoryItems = []) {
   const jobOrdersList = document.getElementById("jobOrdersTableBody");
 
   if (!jobOrdersList) {
@@ -69,6 +69,7 @@ async function loadJobOrders() {
       if (row.jobOrderItemId) {
         jobOrder.jobOrderItems.push({
           jobOrderItemId: row.jobOrderItemId,
+          inventoryItemId: row.inventoryItemId,
           itemName: row.itemName,
           quantityUsed: row.quantityUsed,
           unitPrice: row.unitPrice
@@ -98,7 +99,7 @@ async function loadJobOrders() {
       editButton.textContent = "Edit";
 
       editButton.addEventListener("click", () => {
-        openEditJobOrder(jobOrder);
+        openEditJobOrder(jobOrder, inventoryItems);
       });
 
       const deleteButton = document.createElement("button");
@@ -274,10 +275,7 @@ async function loadInventoryItems() {
 }
 
 // ADD JOB ORDER ITEM
-function addJobOrderItem(inventoryItems) {
-  const template = document.getElementById("jobOrderItemTemplate");
-  const container = document.getElementById("jobOrderItemsTableBody");
-
+function addJobOrderItem(inventoryItems, container, template, item = null) {
   if (!template || !container) {
     console.error("Job Order Items: Required elements were not found.");
     return;
@@ -289,15 +287,24 @@ function addJobOrderItem(inventoryItems) {
   const unitPriceInput = row.querySelector(".jobOrderItemUnitPrice");
   const removeButton = row.querySelector(".removeJobOrderItemButton");
 
-  inventoryItems.forEach((item) => {
+  inventoryItems.forEach((inventoryItem) => {
     const option = document.createElement("option");
 
-    option.value = item.inventoryItemId;
-    option.textContent = item.itemName;
-    option.dataset.sellingPrice = item.sellingPrice;
+    option.value = inventoryItem.inventoryItemId;
+    option.textContent = inventoryItem.itemName;
+    option.dataset.sellingPrice = inventoryItem.sellingPrice;
 
     inventorySelect.appendChild(option);
   });
+
+  if (item) {
+    if (item.inventoryItemId != null) {
+      inventorySelect.value = String(item.inventoryItemId);
+    }
+
+    quantityInput.value = item.quantityUsed ?? 1;
+    unitPriceInput.value = item.unitPrice ?? "";
+  }
 
   inventorySelect.addEventListener("change", () => {
     const selectedOption = inventorySelect.selectedOptions[0];
@@ -332,12 +339,13 @@ function getJobOrderItems() {
 
 
 // OPEN EDIT DIALOG
-
-function openEditJobOrder(jobOrder) {
+function openEditJobOrder(jobOrder, inventoryItems) {
   const modal = document.getElementById("editJobOrderModal");
+  const template = document.getElementById("editJobOrderItemTemplate");
+  const container = document.getElementById("editJobOrderItemsTableBody");
 
-  if (!modal) {
-    console.error("Edit Job Order: Dialog was not found.");
+  if (!modal || !template || !container) {
+    console.error("Edit Job Order: Required elements were not found.");
     return;
   }
 
@@ -352,6 +360,11 @@ function openEditJobOrder(jobOrder) {
   const description = document.getElementById("editDescription");
   const repairStatus = document.getElementById("editRepairStatus");
 
+  const serviceType = document.getElementById("editServiceType");
+  const laborCharge = document.getElementById("editLaborCharge");
+  const serviceDescription = document.getElementById(
+    "editServiceDescription"
+  );
 
   if (
     !jobOrderId ||
@@ -361,7 +374,10 @@ function openEditJobOrder(jobOrder) {
     !motorcycleModel ||
     !repairDate ||
     !description ||
-    !repairStatus
+    !repairStatus ||
+    !serviceType ||
+    !laborCharge ||
+    !serviceDescription
   ) {
     console.error("Edit Job Order: One or more form elements were not found.");
     return;
@@ -372,11 +388,26 @@ function openEditJobOrder(jobOrder) {
   customerContactNumber.value = jobOrder.contactNo ?? "";
   motorcycleName.value = jobOrder.motorcycleName ?? "";
   motorcycleModel.value = jobOrder.motorcycleModel ?? "";
-
   repairDate.value = toDateTimeLocalValue(jobOrder.repairDate);
-
   description.value = jobOrder.description ?? "";
   repairStatus.value = jobOrder.repairStatus ?? "pending";
+
+  const service = jobOrder.serviceRecord;
+
+  serviceType.value = service?.serviceType ?? "";
+  laborCharge.value = service?.laborCharge ?? "";
+  serviceDescription.value = service?.serviceDescription ?? "";
+
+  container.replaceChildren();
+
+  if (Array.isArray(jobOrder.jobOrderItems) &&
+      jobOrder.jobOrderItems.length > 0) {
+    jobOrder.jobOrderItems.forEach((item) => {
+      addJobOrderItem(inventoryItems, container, template, item);
+    });
+  } else if (inventoryItems.length > 0) {
+    addJobOrderItem(inventoryItems, container, template);
+  }
 
   if (!modal.open) {
     modal.showModal();
@@ -398,9 +429,11 @@ export async function initJobOrdersPage() {
 
   const addItemButton = document.getElementById("addJobOrderItemButton");
   const itemsContainer = document.getElementById("jobOrderItemsTableBody");
-  // const deleteButton = document.getElementById(
-  //   "deleteJobOrderButton"
-  // );
+
+  const itemTemplate = document.getElementById("jobOrderItemTemplate");
+  const addEditItemButton = document.getElementById("addEditJobOrderItemButton");
+  const editItemsContainer = document.getElementById("editJobOrderItemsTableBody");
+  const editItemTemplate = document.getElementById("editJobOrderItemTemplate");
 
   if (
     !createButton ||
@@ -411,10 +444,12 @@ export async function initJobOrdersPage() {
     !editModal ||
     !editForm ||
     !closeEditButton ||
-    !cancelEditButton  || 
-    // || !deleteButton
+    !cancelEditButton ||
     !addItemButton ||
-    !itemsContainer
+    !itemsContainer ||
+    !addEditItemButton ||
+    !editItemsContainer ||
+    !editItemTemplate
   ) {
     console.error(
       "Job Orders: One or more required HTML elements were not found."
@@ -430,8 +465,7 @@ export async function initJobOrdersPage() {
     console.error("Load Inventory Items:", error);
   }
 
-  await loadJobOrders();
-
+  await loadJobOrders(inventoryItems);
 
   // CREATE DIALOG
   closeButton.addEventListener("click", () => {
@@ -448,7 +482,7 @@ export async function initJobOrdersPage() {
     itemsContainer.replaceChildren();
 
     if (inventoryItems.length > 0) {
-      addJobOrderItem(inventoryItems);
+      addJobOrderItem(inventoryItems, itemsContainer, itemTemplate);
     }
 
     modal.showModal();
@@ -460,7 +494,11 @@ export async function initJobOrdersPage() {
       return;
     }
 
-    addJobOrderItem(inventoryItems);
+    addJobOrderItem(inventoryItems, itemsContainer, itemTemplate);
+  });
+
+  form.addEventListener("submit", (event) => {
+    createJobOrder(event, form, modal, itemsContainer);
   });
 
   // EDIT DIALOG
@@ -472,153 +510,167 @@ export async function initJobOrdersPage() {
     editModal.close();
   });
 
-  // SAVE CHANGES
-  editForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-
-    const formData = new FormData(editForm);
-    const jobOrderId = formData.get("jobOrderId");
-
-    const jobOrderData = {
-      customerName: formData.get("customerName"),
-      customerContactNumber: formData.get("customerContactNumber"),
-      motorcycleName: formData.get("motorcycleName"),
-      motorcycleModel: formData.get("motorcycleModel") || null,
-      repairDate: formData.get("repairDate"),
-      description: formData.get("description") || null,
-      repairStatus: formData.get("repairStatus")
-    };
-
-    try {
-      const response = await fetch(
-        `/api/job-orders/${jobOrderId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          credentials: "same-origin",
-          body: JSON.stringify(jobOrderData)
-        }
-      );
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          result.message || "Failed to update job order."
-        );
-      }
-
-      editModal.close();
-      await loadJobOrders();
-
-      alert("Job order updated successfully.");
-    }
-    catch (error) {
-      console.error("Update Job Order:", error);
-      alert(error.message);
-    }
+  editForm.addEventListener("submit", (event) => {
+    updateJobOrder(event, editForm, editModal);
   });
 
-  // // DELETE JOB ORDER
-  // deleteButton.addEventListener("click", async () => {
-  //   const jobOrderId = document.getElementById(
-  //     "editJobOrderId"
-  //   ).value;
+  addEditItemButton.addEventListener("click", () => {
+    if (inventoryItems.length === 0) {
+      alert("No inventory items are available.");
+      return;
+    }
 
-  //   if (!jobOrderId) {
-  //     alert("No job order was selected.");
-  //     return;
-  //   }
+    addJobOrderItem(inventoryItems, editItemsContainer, editItemTemplate);
+  });
 
-  //   const confirmed = confirm(
-  //     "Are you sure you want to delete this job order?"
-  //   );
+  // DELETE JOB ORDER
+  // Deletion is currently disabled.
+  // Enable this when the delete functionality is ready.
+}
 
-  //   if (!confirmed) {
-  //     return;
-  //   }
+// EVENT LISTENER HELPER FUNCTIONS- - - - - - - - - - - - - - - - - - - - - 
 
-  //   try {
-  //     const response = await fetch(`/api/job-orders/${jobOrderId}`,
-  //       {
-  //         method: "DELETE",
-  //         credentials: "same-origin"
-  //       }
-  //     );
+// CREATE JOB ORDER
+async function createJobOrder(event, form, modal, itemsContainer) {
+  event.preventDefault();
 
-  //     const result = await response.json();
+  const formData = new FormData(form);
 
-  //     if (!response.ok) {
-  //       throw new Error(
-  //         result.message || "Failed to delete job order."
-  //       );
-  //     }
+  const jobOrderData = {
+    customerName: formData.get("customerName"),
+    customerContactNumber: formData.get("customerContactNumber"),
+    motorcycleName: formData.get("motorcycleName"),
+    motorcycleModel: formData.get("motorcycleModel") || null,
+    repairDate: formData.get("repairDate"),
+    description: formData.get("description") || null,
+    repairStatus: formData.get("repairStatus"),
+    serviceRecord: {
+      serviceType: formData.get("serviceType"),
+      serviceDescription: formData.get("serviceDescription"),
+      laborCharge: Number(formData.get("laborCharge"))
+    },
+    jobOrderItems: getJobOrderItems()
+  };
 
-  //     editModal.close();
-  //     await loadJobOrders();
-
-  //     alert("Job order deleted successfully.");
-  //   }
-  //   catch (error) {
-  //     console.error("Delete Job Order:", error);
-  //     alert(error.message);
-  //   }
-  // });
-
-  // CREATE JOB ORDER
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-
-    const formData = new FormData(form);
-
-    const jobOrderData = {
-      customerName: formData.get("customerName"),
-      customerContactNumber: formData.get("customerContactNumber"),
-      motorcycleName: formData.get("motorcycleName"),
-      motorcycleModel: formData.get("motorcycleModel") || null,
-      repairDate: formData.get("repairDate"),
-      description: formData.get("description") || null,
-      repairStatus: formData.get("repairStatus"),
-      serviceRecord: {
-        serviceType: formData.get("serviceType"),
-        serviceDescription: formData.get("serviceDescription"),
-        laborCharge: Number(formData.get("laborCharge"))
+  try {
+    const response = await fetch("/api/job-orders", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
       },
-      jobOrderItems: getJobOrderItems()
-    };
+      credentials: "same-origin",
+      body: JSON.stringify(jobOrderData)
+    });
 
-    try {
-      const response = await fetch("/api/job-orders", {
-        method: "POST",
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        result.message || "Failed to create job order."
+      );
+    }
+
+    modal.close();
+    form.reset();
+    itemsContainer.replaceChildren();
+
+    setDefaultDate("repairDate");
+
+    await loadJobOrders();
+
+    alert("Job order created successfully.");
+  } catch (error) {
+    console.error("Create Job Order:", error);
+    alert(error.message);
+  }
+}
+
+// UPDATE JOB ORDER
+async function updateJobOrder(event, form, modal) {
+  event.preventDefault();
+
+  const formData = new FormData(form);
+  const jobOrderId = formData.get("jobOrderId");
+
+  const jobOrderData = {
+    customerName: formData.get("customerName"),
+    customerContactNumber: formData.get("customerContactNumber"),
+    motorcycleName: formData.get("motorcycleName"),
+    motorcycleModel: formData.get("motorcycleModel") || null,
+    repairDate: formData.get("repairDate"),
+    description: formData.get("description") || null,
+    repairStatus: formData.get("repairStatus")
+  };
+
+  try {
+    const response = await fetch(
+      `/api/job-orders/${jobOrderId}`,
+      {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json"
         },
         credentials: "same-origin",
         body: JSON.stringify(jobOrderData)
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          result.message || "Failed to create job order."
-        );
       }
+    );
 
-      modal.close();
-      form.reset();
-      itemsContainer.replaceChildren();
+    const result = await response.json();
 
-      setDefaultDate("repairDate");
-
-      await loadJobOrders();
-
-      alert("Job order created successfully.");
-    } catch (error) {
-      console.error("Create Job Order:", error);
-      alert(error.message);
+    if (!response.ok) {
+      throw new Error(
+        result.message || "Failed to update job order."
+      );
     }
-  });
+
+    modal.close();
+
+    await loadJobOrders();
+
+    alert("Job order updated successfully.");
+  } catch (error) {
+    console.error("Update Job Order:", error);
+    alert(error.message);
+  }
+}
+
+// DELETE JOB ORDER
+async function handleDeleteJobOrder(jobOrderId) {
+  if (!jobOrderId) {
+    alert("No job order was selected.");
+    return;
+  }
+
+  const confirmed = confirm(
+    "Are you sure you want to delete this job order?"
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `/api/job-orders/${jobOrderId}`,
+      {
+        method: "DELETE",
+        credentials: "same-origin"
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        result.message || "Failed to delete job order."
+      );
+    }
+
+    await loadJobOrders();
+
+    alert("Job order deleted successfully.");
+  } catch (error) {
+    console.error("Delete Job Order:", error);
+    alert(error.message);
+  }
 }

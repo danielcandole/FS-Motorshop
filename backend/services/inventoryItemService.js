@@ -1,5 +1,5 @@
 import pool from "../config/database.js";
-
+import { createStockTransaction, getStockTransactionDetails } from "./stockTransactionService.js";
 // GET INVENTORY ITEM BY ID
 export async function getInventoryItemById(inventoryItemId) {
   try {
@@ -13,6 +13,7 @@ export async function getInventoryItemById(inventoryItemId) {
         ii.itemCategory,
         ii.brand,
         ii.motorcycleFitment,
+        ii.quantity,
         ii.costPrice,
         ii.sellingPrice
       FROM inventoryItem AS ii
@@ -51,6 +52,7 @@ export async function createInventoryItemData(request) {
       itemCategory,
       brand,
       motorcycleFitment,
+      quantity,
       costPrice,
       sellingPrice
     } = request.validatedInventoryItem;
@@ -103,11 +105,12 @@ export async function createInventoryItemData(request) {
         itemCategory,
         brand,
         motorcycleFitment,
+        quantity,
         costPrice,
         sellingPrice,
         deletedAt
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
     `, [
       foundSupplierId,
       itemName,
@@ -115,9 +118,15 @@ export async function createInventoryItemData(request) {
       itemCategory || null,
       brand || null,
       motorcycleFitment || null,
+      quantity,
       costPrice,
       sellingPrice
     ]);
+
+    // CREATE INITIAL STOCK TRANSACTION
+    if (quantity > 0) {
+      await createStockTransaction(connection, quantity, "Stock In", {inventoryItemId: result.insertId});
+    }
 
     await connection.commit();
 
@@ -149,6 +158,7 @@ export async function readInventoryItemData() {
         ii.itemCategory,
         ii.brand,
         ii.motorcycleFitment,
+        ii.quantity,
         ii.costPrice,
         ii.sellingPrice
       FROM inventoryItem AS ii
@@ -184,6 +194,7 @@ export async function updateInventoryItemData(request) {
       itemCategory,
       brand,
       motorcycleFitment,
+      quantity,
       costPrice,
       sellingPrice
     } = request.validatedInventoryItem;
@@ -191,16 +202,20 @@ export async function updateInventoryItemData(request) {
     // CHECK INVENTORY ITEM
     const [inventoryItems] = await connection.execute(`
       SELECT
-        inventoryItemId
+        inventoryItemId,
+        quantity
       FROM inventoryItem
       WHERE inventoryItemId = ?
         AND deletedAt IS NULL
       LIMIT 1
+      FOR UPDATE
     `, [inventoryItemId]);
 
     if (inventoryItems.length === 0) {
       throw new Error("Inventory item not found.");
     }
+
+    const oldQuantity = inventoryItems[0].quantity;
 
     let foundSupplierId;
 
@@ -251,6 +266,7 @@ export async function updateInventoryItemData(request) {
         itemCategory = ?,
         brand = ?,
         motorcycleFitment = ?,
+        quantity = ?,
         costPrice = ?,
         sellingPrice = ?
       WHERE inventoryItemId = ?
@@ -262,10 +278,19 @@ export async function updateInventoryItemData(request) {
       itemCategory || null,
       brand || null,
       motorcycleFitment || null,
+      quantity,
       costPrice,
       sellingPrice,
       inventoryItemId
     ]);
+
+    // DETERMINE STOCK TRANSACTION
+    const stockTransaction = getStockTransactionDetails(oldQuantity, quantity);
+
+    // CREATE STOCK TRANSACTION
+    if (stockTransaction) {
+      await createStockTransaction(connection, stockTransaction.quantity, stockTransaction.type, {inventoryItemId});
+    }
 
     await connection.commit();
 

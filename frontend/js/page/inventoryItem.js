@@ -176,6 +176,7 @@ function openEditInventoryItem(inventoryItem) {
   const editItemCategory = document.getElementById("editItemCategory");
   const editBrand = document.getElementById("editBrand");
   const editMotorcycleFitment = document.getElementById("editMotorcycleFitment");
+  const editQuantity = document.getElementById("editQuantity");
   const editCostPrice = document.getElementById("editCostPrice");
   const editSellingPrice = document.getElementById("editSellingPrice");
 
@@ -192,6 +193,7 @@ function openEditInventoryItem(inventoryItem) {
     editItemCategory,
     editBrand,
     editMotorcycleFitment,
+    editQuantity,
     editCostPrice,
     editSellingPrice
   ];
@@ -218,6 +220,7 @@ function openEditInventoryItem(inventoryItem) {
   editItemCategory.value = inventoryItem.itemCategory ?? "";
   editBrand.value = inventoryItem.brand ?? "";
   editMotorcycleFitment.value = inventoryItem.motorcycleFitment ?? "";
+  editQuantity.value = inventoryItem.quantity ?? "";
   editCostPrice.value = inventoryItem.costPrice ?? "";
   editSellingPrice.value = inventoryItem.sellingPrice ?? "";
 
@@ -247,6 +250,7 @@ function createInventoryItemRow(inventoryItem) {
   row.appendChild(createTableCell(inventoryItem.itemCategory));
   row.appendChild(createTableCell(inventoryItem.brand));
   row.appendChild(createTableCell(inventoryItem.motorcycleFitment));
+  row.appendChild(createTableCell(inventoryItem.quantity));
   row.appendChild(createTableCell(inventoryItem.costPrice));
   row.appendChild(createTableCell(inventoryItem.sellingPrice));
 

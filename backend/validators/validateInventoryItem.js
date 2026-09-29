@@ -24,6 +24,7 @@ export function validateInventoryItemInput(body) {
     itemCategory,
     brand,
     motorcycleFitment,
+    quantity,
     costPrice,
     sellingPrice
   } = body;
@@ -118,6 +119,17 @@ export function validateInventoryItemInput(body) {
     }
   }
 
+  // VALIDATE TRANSACTION QUALITY
+  if (quantity === undefined || quantity === null || quantity === "") {
+    errors.push("Quantity is required.");
+  }
+  else if (!isNumericString(quantity)) {
+    errors.push("Quantity must be numeric.");
+  }
+  else if (Number(quantity) < 0) {
+    errors.push("Quantity must not be negative.");
+  }
+
   // VALIDATE COST PRICE
   if (costPrice === undefined || costPrice === null || costPrice === "") {
     errors.push("Cost price is required.");
@@ -158,6 +170,7 @@ export function validateInventoryItemInput(body) {
       itemCategory: itemCategory?.trim() || null,
       brand: brand?.trim() || null,
       motorcycleFitment: motorcycleFitment?.trim() || null,
+      quantity: Number(quantity).toFixed(2),
       costPrice: Number(costPrice).toFixed(2),
       sellingPrice: Number(sellingPrice).toFixed(2)
     },
@@ -185,6 +198,7 @@ export function validateInventoryItemUpdateInput(body) {
     itemCategory,
     brand,
     motorcycleFitment,
+    quantity,
     costPrice,
     sellingPrice
   } = body;
@@ -279,6 +293,17 @@ export function validateInventoryItemUpdateInput(body) {
     }
   }
 
+  // VALIDATE TRANSACTION QUALITY
+  if (quantity === undefined || quantity === null || quantity === "") {
+    errors.push("Quantity is required.");
+  }
+  else if (!isNumericString(quantity)) {
+    errors.push("Quantity must be numeric.");
+  }
+  else if (Number(quantity) < 0) {
+    errors.push("Quantity must not be negative.");
+  }
+
   // VALIDATE COST PRICE
   if (costPrice === undefined || costPrice === null || costPrice === "") {
     errors.push("Cost price is required.");
@@ -319,6 +344,7 @@ export function validateInventoryItemUpdateInput(body) {
       itemCategory: itemCategory?.trim() || null,
       brand: brand?.trim() || null,
       motorcycleFitment: motorcycleFitment?.trim() || null,
+      quantity: Number(quantity).toFixed(2),
       costPrice: Number(costPrice).toFixed(2),
       sellingPrice: Number(sellingPrice).toFixed(2)
     },

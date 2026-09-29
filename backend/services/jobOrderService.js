@@ -97,13 +97,33 @@ export async function readJobOrderData() {
         m.motorcycleModel,
         j.repairDate,
         j.description,
-        j.repairStatus
+        j.repairStatus,
+
+        ji.jobOrderItemId,
+        ji.quantityUsed,
+        ji.unitPrice,
+
+        sr.serviceRecordId,
+        sr.serviceType,
+        sr.serviceDescription,
+        sr.laborCharge
+
       FROM jobOrder AS j
+
       INNER JOIN motorcycleRecord AS m
         ON j.motorcycleRecordId = m.motorcycleRecordId
+
       INNER JOIN customerRecord AS c
         ON m.customerRecordId = c.customerRecordId
+
+      LEFT JOIN jobOrderItem AS ji
+        ON j.jobOrderId = ji.jobOrderId
+
+      LEFT JOIN serviceRecord AS sr
+        ON j.jobOrderId = sr.jobOrderId
+
       WHERE j.deletedAt IS NULL
+
       ORDER BY j.jobOrderId DESC
     `);
 

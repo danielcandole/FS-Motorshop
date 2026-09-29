@@ -20,24 +20,8 @@
       <h2 id="jobOrdersListTitle">All Job Orders</h2>
     </header>
 
-    <div class="tableContainer">
-      <table class="jobOrdersTableHeader">
-        <thead>
-          <tr>
-            <th scope="col">Customer Name</th>
-            <th scope="col">Contact Number</th>
-            <th scope="col">Motorcycle Name</th>
-            <th scope="col">Motorcycle Model</th>
-            <th scope="col">Repair Date</th>
-            <th scope="col">Description</th>
-            <th scope="col">Repair Status</th>
-          </tr>
-        </thead>
-
-        <tbody id="jobOrdersTableBody">
-
-        </tbody>
-      </table>
+    <div class="jobOrdersList" id="jobOrdersTableBody">
+      <!-- Job order cards will be rendered here by JavaScript. -->
     </div>
   </section>
 </section>
@@ -266,13 +250,13 @@
       </div>
 
       <footer class="modalFooter">
-        <button
+        <!-- <button
           class="dangerButton"
           type="button"
           id="deleteJobOrderButton"
         >
           Delete
-        </button>
+        </button> -->
 
         <button
           class="secondaryButton"

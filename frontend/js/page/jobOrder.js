@@ -255,6 +255,82 @@ async function loadJobOrders() {
   }
 }
 
+// LOAD INVENTORY ITEMS
+async function loadInventoryItems() {
+  const response = await fetch("/api/inventory-items", {
+    method: "GET",
+    credentials: "same-origin"
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      result.message || "Failed to load inventory items."
+    );
+  }
+
+  return result.data;
+}
+
+// ADD JOB ORDER ITEM
+function addJobOrderItem(inventoryItems) {
+  const template = document.getElementById("jobOrderItemTemplate");
+  const container = document.getElementById("jobOrderItemsTableBody");
+
+  if (!template || !container) {
+    console.error("Job Order Items: Required elements were not found.");
+    return;
+  }
+
+  const row = template.content.firstElementChild.cloneNode(true);
+  const inventorySelect = row.querySelector(".jobOrderItemInventory");
+  const quantityInput = row.querySelector(".jobOrderItemQuantity");
+  const unitPriceInput = row.querySelector(".jobOrderItemUnitPrice");
+  const removeButton = row.querySelector(".removeJobOrderItemButton");
+
+  inventoryItems.forEach((item) => {
+    const option = document.createElement("option");
+
+    option.value = item.inventoryItemId;
+    option.textContent = item.itemName;
+    option.dataset.sellingPrice = item.sellingPrice;
+
+    inventorySelect.appendChild(option);
+  });
+
+  inventorySelect.addEventListener("change", () => {
+    const selectedOption = inventorySelect.selectedOptions[0];
+
+    unitPriceInput.value = selectedOption.dataset.sellingPrice ?? "";
+  });
+
+  removeButton.addEventListener("click", () => {
+    row.remove();
+  });
+
+  container.appendChild(row);
+}
+
+// GET JOB ORDER ITEMS
+function getJobOrderItems() {
+  const container = document.getElementById("jobOrderItemsTableBody");
+  const rows = container.querySelectorAll(".jobOrderItemRow");
+
+  return Array.from(rows).map((row) => ({
+    inventoryItemId: Number(
+      row.querySelector(".jobOrderItemInventory").value
+    ),
+    quantityUsed: Number(
+      row.querySelector(".jobOrderItemQuantity").value
+    ),
+    unitPrice: Number(
+      row.querySelector(".jobOrderItemUnitPrice").value
+    )
+  }));
+}
+
+
 // OPEN EDIT DIALOG
 
 function openEditJobOrder(jobOrder) {
@@ -317,12 +393,11 @@ export async function initJobOrdersPage() {
 
   const editModal = document.getElementById("editJobOrderModal");
   const editForm = document.getElementById("editJobOrderForm");
-  const closeEditButton = document.getElementById(
-    "closeEditJobOrderModal"
-  );
-  const cancelEditButton = document.getElementById(
-    "cancelEditJobOrderButton"
-  );
+  const closeEditButton = document.getElementById("closeEditJobOrderModal");
+  const cancelEditButton = document.getElementById("cancelEditJobOrderButton");
+
+  const addItemButton = document.getElementById("addJobOrderItemButton");
+  const itemsContainer = document.getElementById("jobOrderItemsTableBody");
   // const deleteButton = document.getElementById(
   //   "deleteJobOrderButton"
   // );
@@ -336,13 +411,23 @@ export async function initJobOrdersPage() {
     !editModal ||
     !editForm ||
     !closeEditButton ||
-    !cancelEditButton 
-   // || !deleteButton
+    !cancelEditButton  || 
+    // || !deleteButton
+    !addItemButton ||
+    !itemsContainer
   ) {
     console.error(
       "Job Orders: One or more required HTML elements were not found."
     );
     return;
+  }
+
+  let inventoryItems = [];
+
+  try {
+    inventoryItems = await loadInventoryItems();
+  } catch (error) {
+    console.error("Load Inventory Items:", error);
   }
 
   await loadJobOrders();
@@ -359,7 +444,23 @@ export async function initJobOrdersPage() {
 
   createButton.addEventListener("click", () => {
     setDefaultDate("repairDate");
+
+    itemsContainer.replaceChildren();
+
+    if (inventoryItems.length > 0) {
+      addJobOrderItem(inventoryItems);
+    }
+
     modal.showModal();
+  });
+
+  addItemButton.addEventListener("click", () => {
+    if (inventoryItems.length === 0) {
+      alert("No inventory items are available.");
+      return;
+    }
+
+    addJobOrderItem(inventoryItems);
   });
 
   // EDIT DIALOG
@@ -479,7 +580,13 @@ export async function initJobOrdersPage() {
       motorcycleModel: formData.get("motorcycleModel") || null,
       repairDate: formData.get("repairDate"),
       description: formData.get("description") || null,
-      repairStatus: formData.get("repairStatus")
+      repairStatus: formData.get("repairStatus"),
+      serviceRecord: {
+        serviceType: formData.get("serviceType"),
+        serviceDescription: formData.get("serviceDescription"),
+        laborCharge: Number(formData.get("laborCharge"))
+      },
+      jobOrderItems: getJobOrderItems()
     };
 
     try {
@@ -502,13 +609,14 @@ export async function initJobOrdersPage() {
 
       modal.close();
       form.reset();
-
+      itemsContainer.replaceChildren();
 
       setDefaultDate("repairDate");
+
       await loadJobOrders();
+
       alert("Job order created successfully.");
-    }
-    catch (error) {
+    } catch (error) {
       console.error("Create Job Order:", error);
       alert(error.message);
     }

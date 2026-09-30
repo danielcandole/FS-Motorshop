@@ -641,7 +641,7 @@ async function updateJobOrder(event, form, modal) {
 }
 
 // DELETE JOB ORDER
-async function handleDeleteJobOrder(jobOrderId) {
+async function deleteJobOrder(jobOrderId) {
   if (!jobOrderId) {
     alert("No job order was selected.");
     return;

@@ -168,28 +168,28 @@ export async function updateJobOrderData(request) {
     await connection.beginTransaction();
 
     const jobOrderId = request.jobOrderId;
-
     const {
-      customerRecordId,
       customerName,
       customerContactNumber,
-      motorcycleRecordId,
       motorcycleName,
       motorcycleModel,
       repairDate,
-      reportedProblem,
-      repairStatus
+      description,
+      repairStatus,
+      serviceRecord,
+      jobOrderItems
     } = request.validatedJobOrder;
 
     const formattedRepairDate = repairDate.replace("T", " ") + ":00";
 
-    // Find active job order
+    // FIND ACTIVE JOB ORDER
     const [jobOrders] = await connection.execute(`
-      SELECT
-        jobOrderId
-      FROM jobOrder
-      WHERE jobOrderId = ?
-        AND deletedAt IS NULL
+      SELECT j.jobOrderId, j.motorcycleRecordId, m.customerRecordId
+      FROM jobOrder AS j
+      INNER JOIN motorcycleRecord AS m
+        ON j.motorcycleRecordId = m.motorcycleRecordId
+      WHERE j.jobOrderId = ?
+        AND j.deletedAt IS NULL
       LIMIT 1
     `, [jobOrderId]);
 
@@ -197,95 +197,98 @@ export async function updateJobOrderData(request) {
       throw new Error("Job order not found.");
     }
 
-    const foundJobOrderId = jobOrders[0].jobOrderId;
+    const { customerRecordId, motorcycleRecordId } = jobOrders[0];
 
-    // Find motorcycle
-    const [motorcycles] = await connection.execute(`
-      SELECT
-        motorcycleRecordId
-      FROM motorcycleRecord
-      WHERE customerRecordId = ?
-        AND motorcycleName = ?
-        AND motorcycleModel <=> ?
-      LIMIT 1
-    `, [
-      customerRecordId,
-      motorcycleName,
-      motorcycleModel || null
-    ]);
-
-    if (motorcycles.length === 0) {
-      throw new Error("Motorcycle not found.");
-    }
-
-    const foundMotorcycleRecordId = motorcycles[0].motorcycleRecordId;
-
-    // Find customer
-    const [customers] = await connection.execute(`
-      SELECT
-        customerRecordId
-      FROM customerRecord
-      WHERE customerRecordId = ?
-      LIMIT 1
-    `, [customerRecordId]);
-
-    if (customers.length === 0) {
-      throw new Error("Customer not found.");
-    }
-
-    const foundCustomerRecordId = customers[0].customerRecordId;
-
-    // Update customer
+    // UPDATE CUSTOMER
     await connection.execute(`
       UPDATE customerRecord
-      SET
-        customerName = ?,
-        contactNo = ?
+      SET customerName = ?, contactNo = ?
       WHERE customerRecordId = ?
-    `, [
-      customerName,
-      customerContactNumber,
-      foundCustomerRecordId
-    ]);
+    `, [customerName, customerContactNumber, customerRecordId]);
 
-    // Update motorcycle
+    // UPDATE MOTORCYCLE
     await connection.execute(`
       UPDATE motorcycleRecord
-      SET
-        motorcycleName = ?,
-        motorcycleModel = ?
+      SET motorcycleName = ?, motorcycleModel = ?
       WHERE motorcycleRecordId = ?
         AND customerRecordId = ?
-    `, [
-      motorcycleName,
-      motorcycleModel || null,
-      foundMotorcycleRecordId,
-      foundCustomerRecordId
-    ]);
+    `, [motorcycleName, motorcycleModel || null, motorcycleRecordId, customerRecordId]);
 
-    // Update job order
+    // UPDATE JOB ORDER
     await connection.execute(`
       UPDATE jobOrder
-      SET
-        motorcycleRecordId = ?,
-        repairDate = ?,
-        reportedProblem = ?,
-        repairStatus = ?
+      SET repairDate = ?, description = ?, repairStatus = ?
       WHERE jobOrderId = ?
         AND deletedAt IS NULL
-    `, [
-      motorcycleRecordId,
-      formattedRepairDate,
-      reportedProblem || null,
-      repairStatus,
-      foundJobOrderId
-    ]);
+    `, [formattedRepairDate, description || null, repairStatus, jobOrderId]);
+
+    // UPDATE SERVICE RECORD
+    const [serviceRecords] = await connection.execute(`
+      SELECT serviceRecordId
+      FROM serviceRecord
+      WHERE jobOrderId = ?
+      LIMIT 1
+    `, [jobOrderId]);
+
+    if (serviceRecord) {
+      if (serviceRecords.length > 0) {
+        await connection.execute(`
+          UPDATE serviceRecord
+          SET serviceType = ?, serviceDescription = ?, laborCharge = ?
+          WHERE jobOrderId = ?
+        `, [
+          serviceRecord.serviceType,
+          serviceRecord.serviceDescription || null,
+          serviceRecord.laborCharge,
+          jobOrderId
+        ]);
+      }
+      else {
+        await connection.execute(`
+          INSERT INTO serviceRecord (
+            jobOrderId, serviceType, serviceDescription, laborCharge
+          )
+          VALUES (?, ?, ?, ?)
+        `, [
+          jobOrderId,
+          serviceRecord.serviceType,
+          serviceRecord.serviceDescription || null,
+          serviceRecord.laborCharge
+        ]);
+      }
+    }
+    else if (serviceRecords.length > 0) {
+      await connection.execute(`
+        DELETE FROM serviceRecord
+        WHERE jobOrderId = ?
+      `, [jobOrderId]);
+    }
+
+    // UPDATE JOB ORDER ITEMS
+    await connection.execute(`
+      DELETE FROM jobOrderItem
+      WHERE jobOrderId = ?
+    `, [jobOrderId]);
+
+    for (const item of jobOrderItems) {
+      await connection.execute(`
+        INSERT INTO jobOrderItem (
+          jobOrderId, inventoryItemId, quantityUsed, unitPrice
+        )
+        VALUES (?, ?, ?, ?)
+      `, [
+        jobOrderId,
+        item.inventoryItemId,
+        item.quantityUsed,
+        item.unitPrice
+      ]);
+    }
 
     await connection.commit();
 
     return {
-      jobOrderId: foundJobOrderId,
-      customerRecordId: foundCustomerRecordId,
+      jobOrderId,
+      customerRecordId,
       motorcycleRecordId
     };
   }

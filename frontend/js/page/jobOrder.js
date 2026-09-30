@@ -108,7 +108,7 @@ async function loadJobOrders(inventoryItems = []) {
       deleteButton.textContent = "Delete";
 
       deleteButton.addEventListener("click", () => {
-        deleteJobOrder(jobOrder.jobOrderId);
+        deleteJobOrder(jobOrder.jobOrderId, inventoryItems);
       });
 
       actions.append(editButton, deleteButton);
@@ -300,17 +300,23 @@ function addJobOrderItem(inventoryItems, container, template, item = null) {
 
   inventoryItems.forEach((inventoryItem) => {
     const option = document.createElement("option");
-
     option.value = inventoryItem.inventoryItemId;
     option.textContent = inventoryItem.itemName;
     option.dataset.sellingPrice = inventoryItem.sellingPrice;
-
     inventorySelect.appendChild(option);
   });
 
   if (item) {
-    if (item.inventoryItemId != null) {
-      inventorySelect.value = String(item.inventoryItemId);
+    const selectedItem = inventoryItems.find(
+      (inventoryItem) =>
+        Number(inventoryItem.inventoryItemId) === Number(item.inventoryItemId)
+    );
+
+    if (selectedItem) {
+      inventorySelect.value = String(selectedItem.inventoryItemId);
+    }
+    else {
+      console.warn("Inventory item not found:", item.inventoryItemId);
     }
 
     quantityInput.value = item.quantityUsed ?? 1;
@@ -319,7 +325,6 @@ function addJobOrderItem(inventoryItems, container, template, item = null) {
 
   inventorySelect.addEventListener("change", () => {
     const selectedOption = inventorySelect.selectedOptions[0];
-
     unitPriceInput.value = selectedOption.dataset.sellingPrice ?? "";
   });
 
@@ -480,12 +485,12 @@ export async function initJobOrdersPage() {
     addJobOrderItem(inventoryItems, itemsContainer, itemTemplate);
   });
 
-  form.addEventListener("submit", (event) => {createJobOrder(event, form, modal, itemsContainer);});
+  form.addEventListener("submit", (event) => {createJobOrder(event, form, modal, itemsContainer, inventoryItems);});
 
   // EDIT DIALOG
   closeEditButton.addEventListener("click", () => {editModal.close(); });
   cancelEditButton.addEventListener("click", () => {editModal.close();});
-  editForm.addEventListener("submit", (event) => {updateJobOrder(event, editForm, editModal);});
+  editForm.addEventListener("submit", (event) => {updateJobOrder(event, editForm, editModal, inventoryItems);});
 
   addEditItemButton.addEventListener("click", () => {
     if (inventoryItems.length === 0) {
@@ -500,7 +505,7 @@ export async function initJobOrdersPage() {
 // EVENT LISTENER HELPER FUNCTIONS- - - - - - - - - - - - - - - - - - - - - 
 
 // CREATE JOB ORDER
-async function createJobOrder(event, form, modal, itemsContainer) {
+async function createJobOrder(event, form, modal, itemsContainer, inventoryItems) {
   event.preventDefault();
 
   const formData = new FormData(form);
@@ -544,7 +549,7 @@ async function createJobOrder(event, form, modal, itemsContainer) {
 
     setDefaultDate("repairDate");
 
-    await loadJobOrders();
+    await loadJobOrders(inventoryItems);
 
     alert("Job order created successfully.");
   } catch (error) {
@@ -554,7 +559,7 @@ async function createJobOrder(event, form, modal, itemsContainer) {
 }
 
 // UPDATE JOB ORDER
-async function updateJobOrder(event, form, modal) {
+async function updateJobOrder(event, form, modal, inventoryItems) {
   event.preventDefault();
 
   const formData = new FormData(form);
@@ -600,7 +605,7 @@ async function updateJobOrder(event, form, modal) {
 
     modal.close();
 
-    await loadJobOrders();
+    await loadJobOrders(inventoryItems);
 
     alert("Job order updated successfully.");
   } catch (error) {
@@ -610,7 +615,7 @@ async function updateJobOrder(event, form, modal) {
 }
 
 // DELETE JOB ORDER
-async function deleteJobOrder(jobOrderId) {
+async function deleteJobOrder(jobOrderId, inventoryItems) {
   if (!jobOrderId) {
     alert("No job order was selected.");
     return;
@@ -641,7 +646,7 @@ async function deleteJobOrder(jobOrderId) {
       );
     }
 
-    await loadJobOrders();
+    await loadJobOrders(inventoryItems);
 
     alert("Job order deleted successfully.");
   } catch (error) {

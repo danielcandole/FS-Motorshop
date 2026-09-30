@@ -324,15 +324,9 @@ function getJobOrderItems(container) {
   const rows = container.querySelectorAll(".jobOrderItemRow");
 
   return Array.from(rows).map((row) => ({
-    inventoryItemId: Number(
-      row.querySelector(".jobOrderItemInventory").value
-    ),
-    quantityUsed: Number(
-      row.querySelector(".jobOrderItemQuantity").value
-    ),
-    unitPrice: Number(
-      row.querySelector(".jobOrderItemUnitPrice").value
-    )
+    inventoryItemId: Number(row.querySelector(".jobOrderItemInventory").value),
+    quantityUsed: Number(row.querySelector(".jobOrderItemQuantity").value),
+    unitPrice: Number(row.querySelector(".jobOrderItemUnitPrice").value)
   }));
 }
 
@@ -434,25 +428,9 @@ export async function initJobOrdersPage() {
   const editItemsContainer = document.getElementById("editJobOrderItemsTableBody");
   const editItemTemplate = document.getElementById("editJobOrderItemTemplate");
 
-  if (
-    !createButton ||
-    !modal ||
-    !closeButton ||
-    !cancelButton ||
-    !form ||
-    !editModal ||
-    !editForm ||
-    !closeEditButton ||
-    !cancelEditButton ||
-    !addItemButton ||
-    !itemsContainer ||
-    !addEditItemButton ||
-    !editItemsContainer ||
-    !editItemTemplate
-  ) {
-    console.error(
-      "Job Orders: One or more required HTML elements were not found."
-    );
+  if (!createButton || !modal || !closeButton || !cancelButton || !form || !editModal || !editForm || !closeEditButton || !cancelEditButton || 
+    !addItemButton || !itemsContainer || !addEditItemButton || !editItemsContainer || !editItemTemplate) {
+    console.error("Job Orders: One or more required HTML elements were not found.");
     return;
   }
 
@@ -467,15 +445,10 @@ export async function initJobOrdersPage() {
   await loadJobOrders(inventoryItems);
 
   // CREATE DIALOG
-  closeButton.addEventListener("click", () => {
-    modal.close();
-  });
-
-  cancelButton.addEventListener("click", () => {
-    modal.close();
-  });
-
+  closeButton.addEventListener("click", () => {modal.close();});
+  cancelButton.addEventListener("click", () => { modal.close();});
   createButton.addEventListener("click", () => {
+
     setDefaultDate("repairDate");
 
     itemsContainer.replaceChildren();
@@ -496,22 +469,12 @@ export async function initJobOrdersPage() {
     addJobOrderItem(inventoryItems, itemsContainer, itemTemplate);
   });
 
-  form.addEventListener("submit", (event) => {
-    createJobOrder(event, form, modal, itemsContainer);
-  });
+  form.addEventListener("submit", (event) => {createJobOrder(event, form, modal, itemsContainer);});
 
   // EDIT DIALOG
-  closeEditButton.addEventListener("click", () => {
-    editModal.close();
-  });
-
-  cancelEditButton.addEventListener("click", () => {
-    editModal.close();
-  });
-
-  editForm.addEventListener("submit", (event) => {
-    updateJobOrder(event, editForm, editModal);
-  });
+  closeEditButton.addEventListener("click", () => {editModal.close(); });
+  cancelEditButton.addEventListener("click", () => {editModal.close();});
+  editForm.addEventListener("submit", (event) => {updateJobOrder(event, editForm, editModal);});
 
   addEditItemButton.addEventListener("click", () => {
     if (inventoryItems.length === 0) {
@@ -521,10 +484,6 @@ export async function initJobOrdersPage() {
 
     addJobOrderItem(inventoryItems, editItemsContainer, editItemTemplate);
   });
-
-  // DELETE JOB ORDER
-  // Deletion is currently disabled.
-  // Enable this when the delete functionality is ready.
 }
 
 // EVENT LISTENER HELPER FUNCTIONS- - - - - - - - - - - - - - - - - - - - - 

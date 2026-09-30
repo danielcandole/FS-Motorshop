@@ -20,8 +20,8 @@ export async function handleCreateJobOrder(request, response) {
     if (!employee) {return;}
     if (!await authorized(request, response, "jobOrder.create")) {return;}
 
-    const data = await createJobOrderData(request);
-
+    //const data = await createJobOrderData(request);
+    console.log("CREATE JOB ORDER DATA", request.validatedJobOrder);
     sendJson(response, 201, {message: "Job order created successfully.", data});
   }
   catch (error) {
@@ -79,9 +79,8 @@ export async function handleUpdateJobOrder(request, response) {
     if (!employee) {return;}
     if (!await authorized(request, response, "jobOrder.update")) {return;}
 
-    // 5. Update database
-    const data = await updateJobOrderData(request);
-
+    //const data = await updateJobOrderData(request);
+    console.log("UPDATE JOB ORDER DATA", request.validatedJobOrder);
     sendJson(response, 200, {message: "Job order updated successfully.", data});
   }
   catch (error) {

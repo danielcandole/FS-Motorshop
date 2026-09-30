@@ -5,12 +5,17 @@ const allowedRepairStatuses = ["pending","in-progress","done"];
 export function validateJobOrderInput(body) {
   const errors = [];
 
+  // Validate request body
   if (!body || typeof body !== "object" || Array.isArray(body)) {
-    return {valid: false, errors: ["Invalid request body."]}
+    return {
+      valid: false,
+      errors: ["Invalid request body."]
+    };
   }
-  const {customerName, customerContactNumber, motorcycleName, motorcycleModel, repairDate, description, repairStatus} = body;
 
-  // Customer name
+  const {customerName, customerContactNumber, motorcycleName, motorcycleModel, repairDate, description, repairStatus, serviceRecord, jobOrderItems } = body;
+
+  // CUSTOMER NAME
   if (!isNonEmptyString(customerName)) {
     errors.push("Customer name is required.");
   }
@@ -18,7 +23,7 @@ export function validateJobOrderInput(body) {
     errors.push("Customer name must not exceed 100 characters.");
   }
 
-  // Customer contact number
+  // CUSTOMER CONTACT NUMBER
   if (!isNonEmptyString(customerContactNumber)) {
     errors.push("Customer contact number is required.");
   }
@@ -29,7 +34,7 @@ export function validateJobOrderInput(body) {
     errors.push("Customer contact number must not exceed 20 characters.");
   }
 
-  // Motorcycle name
+  // MOTORCYCLE NAME
   if (!isNonEmptyString(motorcycleName)) {
     errors.push("Motorcycle name is required.");
   }
@@ -37,7 +42,7 @@ export function validateJobOrderInput(body) {
     errors.push("Motorcycle name must not exceed 100 characters.");
   }
 
-  // Motorcycle model
+  // MOTORCYCLE MODEL
   if (!isOptionalString(motorcycleModel)) {
     errors.push("Motorcycle model must be a string or null.");
   }
@@ -45,37 +50,126 @@ export function validateJobOrderInput(body) {
     errors.push("Motorcycle model must not exceed 100 characters.");
   }
 
-  // Repair date
+  // REPAIR DATE
   if (!isValidDateTime(repairDate)) {
-    errors.push("Repair date must be a valid date in YYYY-MM-DD format.");
+    errors.push("Repair date must be a valid date and time.");
   }
 
-  // Reported problem
+  // REPORTED PROBLEM
   if (!isOptionalString(description)) {
     errors.push("Reported problem must be a string or null.");
   }
 
-  // Repair status
+  // REPAIR STATUS
   if (!allowedRepairStatuses.includes(repairStatus)) {
     errors.push("Invalid repair status.");
   }
 
-  if (errors.length > 0) { return {valid: false, errors}; }
+  // SERVICE RECORD
+  let validatedServiceRecord = null;
 
+  if (!serviceRecord || typeof serviceRecord !== "object" || Array.isArray(serviceRecord)) {
+    errors.push("Service record must be an object.");
+  } 
+  else {
+    const {serviceType,  serviceDescription, laborCharge} = serviceRecord;
+
+    // SERVICE TYPE
+    if (!isNonEmptyString(serviceType)) {
+      errors.push("Service type is required.");
+    } 
+    else if (!isStringWithinLength(serviceType, 100)) {
+      errors.push("Service type must not exceed 100 characters.");
+    }
+
+    // SERVICE DESCRIPTION
+    if (!isOptionalString(serviceDescription)) {
+      errors.push("Service description must be a string or null.");
+    } 
+    else if (typeof serviceDescription === "string" && !isStringWithinLength(serviceDescription, 1000)) {
+      errors.push("Service description must not exceed 1000 characters.");
+    }
+
+    // LABOR CHARGE
+    if (typeof laborCharge !== "number" || !Number.isFinite(laborCharge) || laborCharge < 0) {
+      errors.push("Labor charge must be a non-negative number.");
+    }
+
+    validatedServiceRecord = {
+      serviceType: typeof serviceType === "string" ? serviceType.trim() : serviceType,
+      serviceDescription: typeof serviceDescription === "string" ? serviceDescription.trim() || null : serviceDescription,
+      laborCharge
+    };
+  }
+
+  // JOB ORDER ITEMS
+  const validatedJobOrderItems = [];
+
+  if (!Array.isArray(jobOrderItems)) {
+    errors.push("Job order items must be an array.");
+  }
+  else {
+    jobOrderItems.forEach((item, index) => {
+      const itemNumber = index + 1;
+
+      if (!item || typeof item !== "object" || Array.isArray(item)) {
+        errors.push(`Job order item ${itemNumber} must be an object.`);
+        return;
+      }
+
+      const {inventoryItemId, quantityUsed, unitPrice} = item;
+
+      let isValidItem = true;
+      
+      // INVENTORY ID
+      if (!Number.isInteger(inventoryItemId) || inventoryItemId <= 0) {
+        errors.push(`Job order item ${itemNumber}: Inventory ID must be a positive integer.`);
+        isValidItem = false;
+      }
+
+      // QUANTITY USED
+      if (!Number.isInteger(quantityUsed) || quantityUsed <= 0) {
+        errors.push(`Job order item ${itemNumber}: Quantity used must be a positive integer.`);
+        isValidItem = false;
+      }
+
+      // UNIT PRICE
+      if (typeof unitPrice !== "number" || !Number.isFinite(unitPrice) || unitPrice < 0) {
+        errors.push(`Job order item ${itemNumber}: Unit price must be a non-negative number.`);
+        isValidItem = false;
+      }
+
+      if (isValidItem) {
+        validatedJobOrderItems.push({inventoryItemId, quantityUsed, unitPrice});
+      }
+    });
+  }
+
+  // RETURN VALIDATION ERRORS
+  if (errors.length > 0) {
+    return {
+      valid: false,
+      errors
+    };
+  }
+
+  // RETURN VALIDATED DATA
   return {
     valid: true,
     data: {
       customerName: customerName.trim(),
-      customerContactNumber:customerContactNumber.trim(),
+      customerContactNumber: customerContactNumber.trim(),
       motorcycleName: motorcycleName.trim(),
-      motorcycleModel:motorcycleModel?.trim() || null,repairDate,
-      description:description?.trim() || null,
-      repairStatus: repairStatus
+      motorcycleModel: motorcycleModel?.trim() || null,
+      repairDate,
+      description: description?.trim() || null,
+      repairStatus,
+      serviceRecord: validatedServiceRecord,
+      jobOrderItems: validatedJobOrderItems
     },
     errors: []
   };
 }
-
 
 export function validateJobOrderId(jobOrderId) {
   const id = Number(jobOrderId);

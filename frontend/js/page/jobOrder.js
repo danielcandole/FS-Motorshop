@@ -24,7 +24,7 @@ async function loadJobOrders(inventoryItems = []) {
     }
 
     const jobOrders = result.data;
-
+    console.log("JOB ORDER DATA: ", jobOrders);
     if (!Array.isArray(jobOrders) || jobOrders.length === 0) {
       jobOrdersList.textContent = "No job orders available.";
       return;
@@ -136,7 +136,7 @@ async function loadJobOrders(inventoryItems = []) {
         strong.textContent = label;
 
         const span = document.createElement("span");
-        span.textContent = value ?? "—";
+        span.textContent = value ?? "N/A";
 
         detail.append(strong, document.createTextNode(" "), span);
         information.appendChild(detail);
@@ -165,23 +165,34 @@ async function loadJobOrders(inventoryItems = []) {
       serviceHead.appendChild(serviceHeadRow);
 
       const serviceBody = document.createElement("tbody");
-      const serviceRow = document.createElement("tr");
 
-      const service = jobOrder.serviceRecord;
+      if (!jobOrder.serviceRecord) {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
 
-      [
-        service?.serviceType ?? "—",
-        service?.serviceDescription ?? "—",
-        service
-          ? `₱${Number(service.laborCharge).toFixed(2)}`
-          : "—"
-      ].forEach((value) => {
-        const td = document.createElement("td");
-        td.textContent = value;
-        serviceRow.appendChild(td);
-      });
+        cell.colSpan = 3;
+        cell.textContent = "No service record";
 
-      serviceBody.appendChild(serviceRow);
+        row.appendChild(cell);
+        serviceBody.appendChild(row);
+      }
+      else {
+        const service = jobOrder.serviceRecord;
+        const row = document.createElement("tr");
+
+        [
+          service.serviceType ?? "N/A",
+          service.serviceDescription ?? "N/A",
+          `₱${Number(service.laborCharge).toFixed(2)}`
+        ].forEach((value) => {
+          const td = document.createElement("td");
+          td.textContent = value;
+          row.appendChild(td);
+        });
+
+        serviceBody.appendChild(row);
+      }
+
       serviceTable.append(serviceHead, serviceBody);
       serviceSection.append(serviceTitle, serviceTable);
 
@@ -190,7 +201,7 @@ async function loadJobOrders(inventoryItems = []) {
       itemsSection.classList.add("jobOrderItems");
 
       const itemsTitle = document.createElement("h4");
-      itemsTitle.textContent = "JOB ORDER ITEMS";
+      itemsTitle.textContent = "PARTS AND INVENTORY";
 
       const itemsTable = document.createElement("table");
       itemsTable.classList.add("jobOrderDetailsTable");
@@ -214,7 +225,7 @@ async function loadJobOrders(inventoryItems = []) {
         const cell = document.createElement("td");
 
         cell.colSpan = 3;
-        cell.textContent = "No parts used.";
+        cell.textContent = "No parts used";
 
         row.appendChild(cell);
         itemsBody.appendChild(row);
@@ -223,8 +234,8 @@ async function loadJobOrders(inventoryItems = []) {
           const row = document.createElement("tr");
 
           [
-            item.itemName ?? "—",
-            item.quantityUsed ?? "—",
+            item.itemName ?? "N/A",
+            item.quantityUsed ?? "N/A",
             `₱${Number(item.unitPrice).toFixed(2)}`
           ].forEach((value) => {
             const td = document.createElement("td");
@@ -324,15 +335,9 @@ function getJobOrderItems(container) {
   const rows = container.querySelectorAll(".jobOrderItemRow");
 
   return Array.from(rows).map((row) => ({
-    inventoryItemId: Number(
-      row.querySelector(".jobOrderItemInventory").value
-    ),
-    quantityUsed: Number(
-      row.querySelector(".jobOrderItemQuantity").value
-    ),
-    unitPrice: Number(
-      row.querySelector(".jobOrderItemUnitPrice").value
-    )
+    inventoryItemId: Number(row.querySelector(".jobOrderItemInventory").value),
+    quantityUsed: Number(row.querySelector(".jobOrderItemQuantity").value),
+    unitPrice: Number(row.querySelector(".jobOrderItemUnitPrice").value)
   }));
 }
 
@@ -400,7 +405,7 @@ function openEditJobOrder(jobOrder, inventoryItems) {
   container.replaceChildren();
 
   if (Array.isArray(jobOrder.jobOrderItems) &&
-      jobOrder.jobOrderItems.length > 0) {
+    jobOrder.jobOrderItems.length > 0) {
     jobOrder.jobOrderItems.forEach((item) => {
       addJobOrderItem(inventoryItems, container, template, item);
     });
@@ -434,25 +439,9 @@ export async function initJobOrdersPage() {
   const editItemsContainer = document.getElementById("editJobOrderItemsTableBody");
   const editItemTemplate = document.getElementById("editJobOrderItemTemplate");
 
-  if (
-    !createButton ||
-    !modal ||
-    !closeButton ||
-    !cancelButton ||
-    !form ||
-    !editModal ||
-    !editForm ||
-    !closeEditButton ||
-    !cancelEditButton ||
-    !addItemButton ||
-    !itemsContainer ||
-    !addEditItemButton ||
-    !editItemsContainer ||
-    !editItemTemplate
-  ) {
-    console.error(
-      "Job Orders: One or more required HTML elements were not found."
-    );
+  if (!createButton || !modal || !closeButton || !cancelButton || !form || !editModal || !editForm || !closeEditButton || !cancelEditButton || 
+    !addItemButton || !itemsContainer || !addEditItemButton || !editItemsContainer || !editItemTemplate) {
+    console.error("Job Orders: One or more required HTML elements were not found.");
     return;
   }
 
@@ -467,15 +456,10 @@ export async function initJobOrdersPage() {
   await loadJobOrders(inventoryItems);
 
   // CREATE DIALOG
-  closeButton.addEventListener("click", () => {
-    modal.close();
-  });
-
-  cancelButton.addEventListener("click", () => {
-    modal.close();
-  });
-
+  closeButton.addEventListener("click", () => {modal.close();});
+  cancelButton.addEventListener("click", () => { modal.close();});
   createButton.addEventListener("click", () => {
+
     setDefaultDate("repairDate");
 
     itemsContainer.replaceChildren();
@@ -496,22 +480,12 @@ export async function initJobOrdersPage() {
     addJobOrderItem(inventoryItems, itemsContainer, itemTemplate);
   });
 
-  form.addEventListener("submit", (event) => {
-    createJobOrder(event, form, modal, itemsContainer);
-  });
+  form.addEventListener("submit", (event) => {createJobOrder(event, form, modal, itemsContainer);});
 
   // EDIT DIALOG
-  closeEditButton.addEventListener("click", () => {
-    editModal.close();
-  });
-
-  cancelEditButton.addEventListener("click", () => {
-    editModal.close();
-  });
-
-  editForm.addEventListener("submit", (event) => {
-    updateJobOrder(event, editForm, editModal);
-  });
+  closeEditButton.addEventListener("click", () => {editModal.close(); });
+  cancelEditButton.addEventListener("click", () => {editModal.close();});
+  editForm.addEventListener("submit", (event) => {updateJobOrder(event, editForm, editModal);});
 
   addEditItemButton.addEventListener("click", () => {
     if (inventoryItems.length === 0) {
@@ -521,10 +495,6 @@ export async function initJobOrdersPage() {
 
     addJobOrderItem(inventoryItems, editItemsContainer, editItemTemplate);
   });
-
-  // DELETE JOB ORDER
-  // Deletion is currently disabled.
-  // Enable this when the delete functionality is ready.
 }
 
 // EVENT LISTENER HELPER FUNCTIONS- - - - - - - - - - - - - - - - - - - - - 
@@ -550,7 +520,6 @@ async function createJobOrder(event, form, modal, itemsContainer) {
     },
     jobOrderItems: getJobOrderItems(itemsContainer)
   };
-
   try {
     const response = await fetch("/api/job-orders", {
       method: "POST",
@@ -641,7 +610,7 @@ async function updateJobOrder(event, form, modal) {
 }
 
 // DELETE JOB ORDER
-async function handleDeleteJobOrder(jobOrderId) {
+async function deleteJobOrder(jobOrderId) {
   if (!jobOrderId) {
     alert("No job order was selected.");
     return;

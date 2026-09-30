@@ -12,39 +12,27 @@ export async function createJobOrderData(request) {
       motorcycleName,
       motorcycleModel,
       repairDate,
-      reportedProblem,
-      repairStatus
+      description,
+      repairStatus,
+      serviceRecord,
+      jobOrderItems
     } = request.validatedJobOrder;
 
     const formattedRepairDate = repairDate.replace("T", " ") + ":00";
 
     // Create customer
     const [customerResult] = await connection.execute(`
-      INSERT INTO customerRecord (
-        customerName,
-        contactNo
-      )
+      INSERT INTO customerRecord (customerName, contactNo)
       VALUES (?, ?)
-    `, [
-      customerName,
-      customerContactNumber
-    ]);
+    `, [customerName, customerContactNumber]);
 
     const customerRecordId = customerResult.insertId;
 
-    // Create motorcycle under the new customer
+    // Create motorcycle
     const [motorcycleResult] = await connection.execute(`
-      INSERT INTO motorcycleRecord (
-        customerRecordId,
-        motorcycleName,
-        motorcycleModel
-      )
+      INSERT INTO motorcycleRecord (customerRecordId, motorcycleName, motorcycleModel)
       VALUES (?, ?, ?)
-    `, [
-      customerRecordId,
-      motorcycleName,
-      motorcycleModel || null
-    ]);
+    `, [customerRecordId, motorcycleName, motorcycleModel || null]);
 
     const motorcycleRecordId = motorcycleResult.insertId;
 
@@ -54,7 +42,7 @@ export async function createJobOrderData(request) {
         employeeAccountId,
         motorcycleRecordId,
         repairDate,
-        reportedProblem,
+        description,
         repairStatus
       )
       VALUES (?, ?, ?, ?, ?)
@@ -62,17 +50,50 @@ export async function createJobOrderData(request) {
       request.employee.employeeAccountId,
       motorcycleRecordId,
       formattedRepairDate,
-      reportedProblem || null,
+      description || null,
       repairStatus
     ]);
 
+    const jobOrderId = jobOrderResult.insertId;
+
+    // Create service record
+    if (serviceRecord) {
+      const { serviceType, serviceDescription, laborCharge } = serviceRecord;
+
+      await connection.execute(`
+        INSERT INTO serviceRecord (
+          jobOrderId,
+          serviceType,
+          serviceDescription,
+          laborCharge
+        )
+        VALUES (?, ?, ?, ?)
+      `, [
+        jobOrderId,
+        serviceType,
+        serviceDescription || null,
+        laborCharge
+      ]);
+    }
+
+    // Create job order items
+    for (const item of jobOrderItems) {
+      const {inventoryItemId, quantityUsed, unitPrice } = item;
+
+      await connection.execute(`
+        INSERT INTO jobOrderItem (
+          jobOrderId,
+          inventoryItemId,
+          quantityUsed,
+          unitPrice
+        )
+        VALUES (?, ?, ?, ?)
+      `, [jobOrderId, inventoryItemId, quantityUsed, unitPrice]);
+    }
+
     await connection.commit();
 
-    return {
-      jobOrderId: jobOrderResult.insertId,
-      customerRecordId,
-      motorcycleRecordId
-    };
+    return { jobOrderId, customerRecordId, motorcycleRecordId };
   }
   catch (error) {
     await connection.rollback();
@@ -100,6 +121,8 @@ export async function readJobOrderData() {
         j.repairStatus,
 
         ji.jobOrderItemId,
+        ji.inventoryItemId,
+        ii.itemName,
         ji.quantityUsed,
         ji.unitPrice,
 
@@ -118,6 +141,9 @@ export async function readJobOrderData() {
 
       LEFT JOIN jobOrderItem AS ji
         ON j.jobOrderId = ji.jobOrderId
+
+      LEFT JOIN inventoryItem AS ii
+        ON ji.inventoryItemId = ii.inventoryItemId
 
       LEFT JOIN serviceRecord AS sr
         ON j.jobOrderId = sr.jobOrderId

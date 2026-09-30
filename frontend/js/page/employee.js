@@ -133,7 +133,7 @@ function openEditEmployee(employee) {
 function createTableCell(value) {
   const cell = document.createElement("td");
 
-  cell.textContent = value ?? "—";
+  cell.textContent = value ?? "N/A";
 
   return cell;
 }

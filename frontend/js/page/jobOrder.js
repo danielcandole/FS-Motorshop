@@ -24,7 +24,7 @@ async function loadJobOrders(inventoryItems = []) {
     }
 
     const jobOrders = result.data;
-
+    console.log("JOB ORDER DATA: ", jobOrders);
     if (!Array.isArray(jobOrders) || jobOrders.length === 0) {
       jobOrdersList.textContent = "No job orders available.";
       return;
@@ -190,7 +190,7 @@ async function loadJobOrders(inventoryItems = []) {
       itemsSection.classList.add("jobOrderItems");
 
       const itemsTitle = document.createElement("h4");
-      itemsTitle.textContent = "JOB ORDER ITEMS";
+      itemsTitle.textContent = "PARTS AND INVENTORY";
 
       const itemsTable = document.createElement("table");
       itemsTable.classList.add("jobOrderDetailsTable");
@@ -394,7 +394,7 @@ function openEditJobOrder(jobOrder, inventoryItems) {
   container.replaceChildren();
 
   if (Array.isArray(jobOrder.jobOrderItems) &&
-      jobOrder.jobOrderItems.length > 0) {
+    jobOrder.jobOrderItems.length > 0) {
     jobOrder.jobOrderItems.forEach((item) => {
       addJobOrderItem(inventoryItems, container, template, item);
     });
@@ -509,7 +509,6 @@ async function createJobOrder(event, form, modal, itemsContainer) {
     },
     jobOrderItems: getJobOrderItems(itemsContainer)
   };
-
   try {
     const response = await fetch("/api/job-orders", {
       method: "POST",

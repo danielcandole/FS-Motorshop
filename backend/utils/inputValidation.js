@@ -13,24 +13,35 @@ export function isValidDate(value) {
 }
 
 export function isValidDateTime(value) {
-  if (
-    typeof value !== "string" ||
-    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)
-  ) {
+  if (typeof value !== "string") {
     return false;
   }
 
-  const [datePart, timePart] = value.split("T");
-  const [year, month, day] = datePart.split("-").map(Number);
-  const [hours, minutes] = timePart.split(":").map(Number);
+  const match = value.match(
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/
+  );
 
-  const date = new Date(Date.UTC(year, month - 1, day));
+  if (!match) {
+    return false;
+  }
 
-  return date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day &&
-    hours >= 0 && hours <= 23 &&
-    minutes >= 0 && minutes <= 59;
+  const [, year, month, day, hours, minutes] = match;
+
+  const date = new Date(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    Number(hours),
+    Number(minutes)
+  );
+
+  return (
+    date.getFullYear() === Number(year) &&
+    date.getMonth() === Number(month) - 1 &&
+    date.getDate() === Number(day) &&
+    date.getHours() === Number(hours) &&
+    date.getMinutes() === Number(minutes)
+  );
 }
 
 export function isStringWithinLength(value, maxLength) {

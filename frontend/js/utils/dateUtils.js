@@ -16,7 +16,7 @@ export function setDefaultDate(inputId) {
 
 export function dateFormat(value) {
   if (!value) {
-    return "—";
+    return "N/A";
   }
 
   const date = new Date(value);

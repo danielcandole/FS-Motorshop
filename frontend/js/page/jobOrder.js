@@ -136,7 +136,7 @@ async function loadJobOrders(inventoryItems = []) {
         strong.textContent = label;
 
         const span = document.createElement("span");
-        span.textContent = value ?? "—";
+        span.textContent = value ?? "N/A";
 
         detail.append(strong, document.createTextNode(" "), span);
         information.appendChild(detail);
@@ -165,23 +165,34 @@ async function loadJobOrders(inventoryItems = []) {
       serviceHead.appendChild(serviceHeadRow);
 
       const serviceBody = document.createElement("tbody");
-      const serviceRow = document.createElement("tr");
 
-      const service = jobOrder.serviceRecord;
+      if (!jobOrder.serviceRecord) {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
 
-      [
-        service?.serviceType ?? "—",
-        service?.serviceDescription ?? "—",
-        service
-          ? `₱${Number(service.laborCharge).toFixed(2)}`
-          : "—"
-      ].forEach((value) => {
-        const td = document.createElement("td");
-        td.textContent = value;
-        serviceRow.appendChild(td);
-      });
+        cell.colSpan = 3;
+        cell.textContent = "No service record";
 
-      serviceBody.appendChild(serviceRow);
+        row.appendChild(cell);
+        serviceBody.appendChild(row);
+      }
+      else {
+        const service = jobOrder.serviceRecord;
+        const row = document.createElement("tr");
+
+        [
+          service.serviceType ?? "N/A",
+          service.serviceDescription ?? "N/A",
+          `₱${Number(service.laborCharge).toFixed(2)}`
+        ].forEach((value) => {
+          const td = document.createElement("td");
+          td.textContent = value;
+          row.appendChild(td);
+        });
+
+        serviceBody.appendChild(row);
+      }
+
       serviceTable.append(serviceHead, serviceBody);
       serviceSection.append(serviceTitle, serviceTable);
 
@@ -214,7 +225,7 @@ async function loadJobOrders(inventoryItems = []) {
         const cell = document.createElement("td");
 
         cell.colSpan = 3;
-        cell.textContent = "No parts used.";
+        cell.textContent = "No parts used";
 
         row.appendChild(cell);
         itemsBody.appendChild(row);
@@ -223,8 +234,8 @@ async function loadJobOrders(inventoryItems = []) {
           const row = document.createElement("tr");
 
           [
-            item.itemName ?? "—",
-            item.quantityUsed ?? "—",
+            item.itemName ?? "N/A",
+            item.quantityUsed ?? "N/A",
             `₱${Number(item.unitPrice).toFixed(2)}`
           ].forEach((value) => {
             const td = document.createElement("td");

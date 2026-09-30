@@ -65,7 +65,7 @@ export async function handleUpdateJobOrder(request, response) {
 
   request.jobOrderId = idValidation.data;
 
-  // 2. Validate request body
+
   const validation = validateJobOrderInput(request.body);
 
   if (!validation.valid) {
@@ -80,9 +80,9 @@ export async function handleUpdateJobOrder(request, response) {
     if (!employee) {return;}
     if (!await authorized(request, response, "jobOrder.update")) {return;}
 
-    //const data = await updateJobOrderData(request);
-    console.log("UPDATE JOB ORDER DATA", request.validatedJobOrder);
-    //sendJson(response, 200, {message: "Job order updated successfully.", data});
+    const data = await updateJobOrderData(request);
+
+    sendJson(response, 200, {message: "Job order updated successfully.", data});
   }
   catch (error) {
     console.error("Update Job Order:", error);

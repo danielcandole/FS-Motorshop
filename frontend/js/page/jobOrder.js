@@ -1,7 +1,7 @@
 import { setDefaultDate, dateFormat, toDateTimeLocalValue } from "../utils/dateUtils.js";
-
+import { initBillingDialog } from "./billing.js";
 // LOAD JOB ORDERS
-async function loadJobOrders(inventoryItems = []) {
+async function loadJobOrders(inventoryItems = [], billing = null) {
   const jobOrdersList = document.getElementById("jobOrdersTableBody");
 
   if (!jobOrdersList) {
@@ -114,7 +114,16 @@ async function loadJobOrders(inventoryItems = []) {
         deleteJobOrder(jobOrder.jobOrderId, inventoryItems);
       });
 
-      actions.append(editButton, deleteButton);
+      const billButton = document.createElement("button");
+      billButton.type = "button";
+      billButton.classList.add("billButton");
+      billButton.textContent = "Create Bill";
+
+      billButton.addEventListener("click", () => {
+        billing.createBill(jobOrder.jobOrderId);
+      });
+      
+      actions.append(billButton, editButton, deleteButton);
       header.append(title, actions);
 
       // JOB ORDER INFORMATION
@@ -506,7 +515,11 @@ export async function initJobOrdersPage() {
     console.error("Job Orders: One or more required HTML elements were not found.");
     return;
   }
+  const billing = initBillingDialog();
 
+  if (!billing) {
+    return;
+  }
   let inventoryItems = [];
 
   try {
@@ -515,7 +528,7 @@ export async function initJobOrdersPage() {
     console.error("Load Inventory Items:", error);
   }
 
-  await loadJobOrders(inventoryItems);
+  await loadJobOrders(inventoryItems, billing);
 
   addServiceButton.addEventListener("click", () => {addService(servicesContainer, serviceTemplate);});
   addEditServiceButton.addEventListener("click", () => {addService(editServicesContainer, editServiceTemplate);});
@@ -717,3 +730,4 @@ async function deleteJobOrder(jobOrderId, inventoryItems) {
     alert(error.message);
   }
 }
+

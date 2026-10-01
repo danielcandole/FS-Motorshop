@@ -25,6 +25,8 @@ import {
   handleDeleteInventoryItem
 } from "../controllers/inventoryItemController.js";
 
+import { handleReadJobOrderBillingData } from "../controllers/billingPaymentReceiptController.js";
+
 export async function handleAuthRoute(request, response, body) {
   
   const pathname = new URL(request.url, `http://${request.headers.host}`).pathname;
@@ -164,6 +166,15 @@ export async function handleAuthRoute(request, response, body) {
       await handleDeleteInventoryItem(request, response);
       return true;
     }
+  }
+
+  // JOB ORDER BILLING
+  const jobOrderBillingMatch = pathname.match(/^\/api\/job-orders\/\d+\/billing$/);
+  
+  if (jobOrderBillingMatch && request.method === "GET") {
+    request.jobOrderId = Number(pathname.match(/^\/api\/job-orders\/(\d+)\/billing$/)[1]);
+    await handleReadJobOrderBillingData(request, response);
+    return true;
   }
 
   return false;

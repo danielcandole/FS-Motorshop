@@ -552,3 +552,138 @@
     </footer>
   </form>
 </dialog>
+
+<dialog id="billingDialog" class="billingDialog">
+  <form id="billingForm" class="billingForm">
+    <header class="billingHeader">
+      <h2>Billing and Payment</h2>
+      <button type="button" class="closeButton" id="closeBillingDialog">
+        &times;
+      </button>
+    </header>
+
+    <div class="billingContent">
+      <!-- JOB ORDER -->
+      <section class="billingSection">
+        <h3>Job Order</h3>
+
+        <div class="billingDetails">
+          <div>
+            <span>Job Order ID</span>
+            <strong id="billingJobOrderId">—</strong>
+          </div>
+
+          <div>
+            <span>Customer</span>
+            <strong id="billingCustomerName">—</strong>
+          </div>
+
+          <div>
+            <span>Motorcycle</span>
+            <strong id="billingMotorcycleName">—</strong>
+          </div>
+        </div>
+      </section>
+
+      <!-- SERVICE BILL -->
+      <section class="billingSection">
+        <h3>Service Bill</h3>
+
+        <div class="billingFields">
+          <label>
+            <span>Parts Total</span>
+            <div class="currencyField">
+              <span>₱</span>
+              <input type="text" id="partsTotal" readonly>
+            </div>
+          </label>
+
+          <label>
+            <span>Labor Total</span>
+            <div class="currencyField">
+              <span>₱</span>
+              <input type="text" id="laborTotal" readonly>
+            </div>
+          </label>
+
+          <label>
+            <span>Other Charges</span>
+            <div class="currencyField">
+              <span>₱</span>
+              <input type="number" id="otherCharges" min="0" step="0.01" value="0">
+            </div>
+          </label>
+
+          <label>
+            <span>Discount</span>
+            <div class="currencyField">
+              <span>₱</span>
+              <input type="number" id="discount" min="0" step="0.01" value="0">
+            </div>
+          </label>
+        </div>
+
+        <div class="billingTotal">
+          <span>Total Amount</span>
+          <strong id="totalAmount">₱0.00</strong>
+        </div>
+      </section>
+
+      <!-- PAYMENT -->
+      <section class="billingSection">
+        <h3>Payment</h3>
+
+        <div class="billingFields">
+          <label>
+            <span>Payment Date</span>
+            <input type="datetime-local" id="paymentDate" required>
+          </label>
+
+          <label>
+            <span>Payment Amount</span>
+            <div class="currencyField">
+              <span>₱</span>
+              <input type="number" id="paymentAmount" min="0.01" step="0.01" required>
+            </div>
+          </label>
+        </div>
+
+        <div class="billingBalance">
+          <span>Remaining Balance</span>
+          <strong id="remainingBalance">₱0.00</strong>
+        </div>
+      </section>
+
+      <!-- RECEIPT -->
+      <section class="billingSection">
+        <h3>Receipt</h3>
+
+        <div class="billingDetails">
+          <div>
+            <span>Receipt Number</span>
+            <strong>Generated automatically</strong>
+          </div>
+
+          <div>
+            <span>Receipt Date</span>
+            <strong>Generated automatically</strong>
+          </div>
+
+          <div>
+            <span>Receipt File</span>
+            <strong>Generated automatically</strong>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <footer class="billingFooter">
+      <button type="button" class="cancelButton" id="cancelBilling">
+        Cancel
+      </button>
+      <button type="submit" class="saveButton" id="savePayment">
+        Save Payment
+      </button>
+    </footer>
+  </form>
+</dialog>

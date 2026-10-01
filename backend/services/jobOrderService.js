@@ -109,55 +109,93 @@ export async function createJobOrderData(request) {
   }
 }
 
+// GROUP RECORDS BY JOB ORDER ID
+function groupByJobOrderId(records) {
+  const groupedRecords = new Map();
+
+  records.forEach(({ jobOrderId, ...record }) => {
+    if (!groupedRecords.has(jobOrderId)) {
+      groupedRecords.set(jobOrderId, []);
+    }
+
+    groupedRecords.get(jobOrderId).push(record);
+  });
+
+  return groupedRecords;
+}
+
+// COMBINE JOB ORDER DATA
+function combineJobOrderData(jobOrders, serviceRecords, jobOrderItems) {
+  const servicesByJobOrder = groupByJobOrderId(serviceRecords);
+  const itemsByJobOrder = groupByJobOrderId(jobOrderItems);
+
+  return jobOrders.map((jobOrder) => ({
+    ...jobOrder,
+    serviceBillId: jobOrder.serviceBillId ?? null,
+    serviceRecords: servicesByJobOrder.get(jobOrder.jobOrderId) ?? [],
+    jobOrderItems: itemsByJobOrder.get(jobOrder.jobOrderId) ?? []
+  }));
+}
+
+// READ JOB ORDER DATA
 export async function readJobOrderData() {
   try {
-    const [jobOrders] = await pool.execute(`
-      SELECT
-        j.jobOrderId,
-        c.customerRecordId,
-        c.customerName,
-        c.contactNo,
-        m.motorcycleRecordId,
-        m.motorcycleName,
-        m.motorcycleModel,
-        j.repairDate,
-        j.description,
-        j.repairStatus,
+    const [jobOrders, serviceRecords, jobOrderItems] = await Promise.all([
+      pool.execute(`
+        SELECT
+          j.jobOrderId,
+          c.customerRecordId,
+          c.customerName,
+          c.contactNo,
+          m.motorcycleRecordId,
+          m.motorcycleName,
+          m.motorcycleModel,
+          j.repairDate,
+          j.description,
+          j.repairStatus,
+          sb.serviceBillId
+        FROM jobOrder AS j
+        INNER JOIN motorcycleRecord AS m
+          ON j.motorcycleRecordId = m.motorcycleRecordId
+        INNER JOIN customerRecord AS c
+          ON m.customerRecordId = c.customerRecordId
+        LEFT JOIN serviceBill AS sb
+          ON j.jobOrderId = sb.jobOrderId
+        WHERE j.deletedAt IS NULL
+        ORDER BY j.jobOrderId DESC
+      `),
+      pool.execute(`
+        SELECT
+          sr.jobOrderId,
+          sr.serviceRecordId,
+          sr.serviceType,
+          sr.serviceDescription,
+          sr.laborCharge
+        FROM serviceRecord AS sr
+        INNER JOIN jobOrder AS j
+          ON sr.jobOrderId = j.jobOrderId
+        WHERE j.deletedAt IS NULL
+        ORDER BY sr.serviceRecordId
+      `),
+      pool.execute(`
+        SELECT
+          ji.jobOrderId,
+          ji.jobOrderItemId,
+          ji.inventoryItemId,
+          ii.itemName,
+          ji.quantityUsed,
+          ji.unitPrice
+        FROM jobOrderItem AS ji
+        INNER JOIN jobOrder AS j
+          ON ji.jobOrderId = j.jobOrderId
+        LEFT JOIN inventoryItem AS ii
+          ON ji.inventoryItemId = ii.inventoryItemId
+        WHERE j.deletedAt IS NULL
+        ORDER BY ji.jobOrderItemId
+      `)
+    ]);
 
-        ji.jobOrderItemId,
-        ji.inventoryItemId,
-        ii.itemName,
-        ji.quantityUsed,
-        ji.unitPrice,
-
-        sr.serviceRecordId,
-        sr.serviceType,
-        sr.serviceDescription,
-        sr.laborCharge
-
-      FROM jobOrder AS j
-
-      INNER JOIN motorcycleRecord AS m
-        ON j.motorcycleRecordId = m.motorcycleRecordId
-
-      INNER JOIN customerRecord AS c
-        ON m.customerRecordId = c.customerRecordId
-
-      LEFT JOIN jobOrderItem AS ji
-        ON j.jobOrderId = ji.jobOrderId
-
-      LEFT JOIN inventoryItem AS ii
-        ON ji.inventoryItemId = ii.inventoryItemId
-
-      LEFT JOIN serviceRecord AS sr
-        ON j.jobOrderId = sr.jobOrderId
-
-      WHERE j.deletedAt IS NULL
-
-      ORDER BY j.jobOrderId DESC
-    `);
-
-    return jobOrders;
+    return combineJobOrderData(jobOrders[0], serviceRecords[0], jobOrderItems[0]);
   }
   catch (error) {
     console.error("Read Job Order Service:", error);

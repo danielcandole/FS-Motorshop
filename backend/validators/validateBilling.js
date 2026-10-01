@@ -45,12 +45,12 @@ export function validateBillingInput(body) {
   }
 
   // Other Charges
-  if (typeof otherCharges !== "number" || !Number.isFinite(otherCharges) || otherCharges < 0) {
+  if (otherCharges !== null && (typeof otherCharges !== "number" || !Number.isFinite(otherCharges) || otherCharges < 0)) {
     errors.push("Invalid other charges.");
   }
 
   // Discount
-  if (typeof discount !== "number" || !Number.isFinite(discount) || discount < 0) {
+  if (discount !== null && (typeof discount !== "number" || !Number.isFinite(discount) || discount < 0)) {
     errors.push("Invalid discount.");
   }
 
@@ -98,4 +98,28 @@ export function validateBillingInput(body) {
       receiptDate
     }
   };
+}
+// VALIDATE BILLING UPDATE INPUT
+export function validateBillingUpdateInput(body) {
+  const errors = [];
+  const { otherCharges, discount, paymentDate, paymentAmount, receiptDate } = body;
+
+  if (otherCharges !== null && (typeof otherCharges !== "number" || !Number.isFinite(otherCharges) || otherCharges < 0)) {
+    errors.push("Invalid other charges.");
+  }
+  if (discount !== null && (typeof discount !== "number" || !Number.isFinite(discount) || discount < 0)) {
+    errors.push("Invalid discount.");
+  }
+  if (!isNonEmptyString(paymentDate) || !isValidDateTime(paymentDate)) {
+    errors.push("Invalid payment date.");
+  }
+  if (typeof paymentAmount !== "number" || !Number.isFinite(paymentAmount) || paymentAmount < 0) {
+    errors.push("Invalid payment amount.");
+  }
+  if (!isNonEmptyString(receiptDate) || Number.isNaN(Date.parse(receiptDate))) {
+    errors.push("Invalid receipt date.");
+  }
+
+  if (errors.length) return { valid: false, errors };
+  return { valid: true, data: { otherCharges, discount, paymentDate, paymentAmount, receiptDate } };
 }

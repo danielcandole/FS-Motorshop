@@ -135,46 +135,56 @@
       <!-- SERVICE -->
       <section class="formSection" aria-labelledby="serviceInformationTitle">
         <header class="sectionHeader">
-          <h3 id="serviceInformationTitle">
-            2. SERVICE
-          </h3>
+          <h3 id="serviceInformationTitle">2. SERVICE</h3>
         </header>
 
-        <div class="formGrid">
-          <div class="formGroup">
-            <label for="serviceType">Service Type</label>
-            <input
-              type="text"
-              id="serviceType"
-              name="serviceType"
-              placeholder="Service Type"
-              required
-            >
-          </div>
+        <div id="servicesContainer" class="formGrid"></div>
 
-          <div class="formGroup">
-            <label for="laborCharge">Labor Charge</label>
-            <input
-              type="number"
-              id="laborCharge"
-              name="laborCharge"
-              min="0"
-              step="0.01"
-              placeholder="0.00"
-              required
-            >
-          </div>
+        <template id="serviceTemplate">
+          <div class="serviceEntry formGroupFull">
+            <div class="formGrid">
+              <div class="formGroup">
+                <label>Service Type</label>
+                <input
+                  type="text"
+                  class="serviceType"
+                  placeholder="Service Type"
+                  required
+                >
+              </div>
 
-          <div class="formGroup formGroupFull">
-            <label for="serviceDescription">Service Description</label>
-            <textarea
-              id="serviceDescription"
-              name="serviceDescription"
-              rows="4"
-              placeholder="Describe the service to be performed... (optional)"
-              required
-            ></textarea>
+              <div class="formGroup">
+                <label>Labor Charge</label>
+                <input
+                  type="number"
+                  class="laborCharge"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  required
+                >
+              </div>
+
+              <div class="formGroup formGroupFull">
+                <label>Service Description</label>
+                <textarea
+                  class="serviceDescription"
+                  rows="4"
+                  placeholder="Describe the service... (optional)"
+                ></textarea>
+              </div>
+            </div>
+            <div class="serviceRecordSectionAction">
+              <button type="button" class="removeServiceButton dangerButton">
+                Remove
+              </button>
+            </div>
           </div>
+        </template>
+        <div class="serviceRecordAction">
+          <button type="button" id="addServiceButton" class="secondaryButton">
+            Add +
+          </button>
         </div>
       </section>
 
@@ -232,7 +242,7 @@
                 >
               </div>
 
-              <div>
+              <div class="jobOrderItemSectionAction">
                 <button
                   class="dangerButton removeJobOrderItemButton"
                   type="button"
@@ -249,7 +259,7 @@
               type="button"
               id="addJobOrderItemButton"
             >
-              + Add Part
+              Add +
             </button>
           </div>
         </div>
@@ -367,7 +377,7 @@
               name="repairStatus"
               required
             >
-              <option value="pending">Pending</option>
+              <option value="pending">Pending</option>s
               <option value="in-progress">In Progress</option>
               <option value="done">Done</option>
             </select>
@@ -389,46 +399,56 @@
       <!-- SERVICE -->
       <section class="formSection" aria-labelledby="editServiceInformationTitle">
         <header class="sectionHeader">
-          <h3 id="editServiceInformationTitle">
-            2. SERVICE
-          </h3>
+          <h3 id="editServiceInformationTitle">2. SERVICE</h3>
         </header>
 
-        <div class="formGrid">
-          <div class="formGroup">
-            <label for="editServiceType">Service Type</label>
-            <input
-              type="text"
-              id="editServiceType"
-              name="serviceType"
-              placeholder="Enter service type"
-              required
-            >
-          </div>
+        <div id="editServicesContainer" class="formGrid"></div>
 
-          <div class="formGroup">
-            <label for="editLaborCharge">Labor Charge</label>
-            <input
-              type="number"
-              id="editLaborCharge"
-              name="laborCharge"
-              min="0"
-              step="0.01"
-              placeholder="0.00"
-              required
-            >
-          </div>
+        <template id="editServiceTemplate">
+          <div class="serviceEntry formGroupFull">
+            <div class="formGrid">
+              <div class="formGroup">
+                <label>Service Type</label>
+                <input
+                  type="text"
+                  class="serviceType"
+                  placeholder="Service Type"
+                  required
+                >
+              </div>
 
-          <div class="formGroup formGroupFull">
-            <label for="editServiceDescription">Service Description</label>
-            <textarea
-              id="editServiceDescription"
-              name="serviceDescription"
-              rows="4"
-              placeholder="Describe the service to be performed... (optional)"
-              required
-            ></textarea>
+              <div class="formGroup">
+                <label>Labor Charge</label>
+                <input
+                  type="number"
+                  class="laborCharge"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  required
+                >
+              </div>
+
+              <div class="formGroup formGroupFull">
+                <label>Service Description</label>
+                <textarea
+                  class="serviceDescription"
+                  rows="4"
+                  placeholder="Describe the service... (optional)"
+                ></textarea>
+              </div>
+            </div>
+            <div class="serviceRecordSectionAction">
+              <button type="button" class="removeServiceButton dangerButton">
+                Remove
+              </button>
+            </div>
           </div>
+        </template>
+        <div class="serviceRecordAction">
+          <button type="button" id="addEditServiceButton" class="secondaryButton">
+            Add +
+          </button>
         </div>
       </section>
 
@@ -491,7 +511,7 @@
                 >
               </div>
 
-              <div>
+              <div class="jobOrderItemSectionAction">
                 <button
                   class="dangerButton removeJobOrderItemButton"
                   type="button"
@@ -508,7 +528,7 @@
               type="button"
               id="addEditJobOrderItemButton"
             >
-              + Add Part
+              Add +
             </button>
           </div>
         </div>

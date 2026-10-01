@@ -48,21 +48,22 @@ async function loadJobOrders(inventoryItems = []) {
           repairDate: row.repairDate,
           description: row.description,
           repairStatus: row.repairStatus,
-          serviceRecord: null,
+          serviceRecords: [],
           jobOrderItems: []
         };
 
         groupedJobOrders.set(row.jobOrderId, jobOrder);
       }
 
-      // SERVICE RECORD
-      if (row.serviceRecordId && !jobOrder.serviceRecord) {
-        jobOrder.serviceRecord = {
+      const isDuplicate = jobOrder.serviceRecords.some((service) => service.serviceRecordId === row.serviceRecordId);
+
+      if (row.serviceRecordId && !isDuplicate) {
+        jobOrder.serviceRecords.push({
           serviceRecordId: row.serviceRecordId,
           serviceType: row.serviceType,
           serviceDescription: row.serviceDescription,
           laborCharge: row.laborCharge
-        };
+        });
       }
 
       // JOB ORDER ITEMS
@@ -166,7 +167,7 @@ async function loadJobOrders(inventoryItems = []) {
 
       const serviceBody = document.createElement("tbody");
 
-      if (!jobOrder.serviceRecord) {
+      if (jobOrder.serviceRecords.length === 0) {
         const row = document.createElement("tr");
         const cell = document.createElement("td");
 
@@ -175,22 +176,22 @@ async function loadJobOrders(inventoryItems = []) {
 
         row.appendChild(cell);
         serviceBody.appendChild(row);
-      }
-      else {
-        const service = jobOrder.serviceRecord;
-        const row = document.createElement("tr");
+      } else {
+        jobOrder.serviceRecords.forEach((service) => {
+          const row = document.createElement("tr");
 
-        [
-          service.serviceType ?? "N/A",
-          service.serviceDescription ?? "N/A",
-          `₱${Number(service.laborCharge).toFixed(2)}`
-        ].forEach((value) => {
-          const td = document.createElement("td");
-          td.textContent = value;
-          row.appendChild(td);
+          [
+            service.serviceType ?? "N/A",
+            service.serviceDescription ?? "N/A",
+            `₱${Number(service.laborCharge).toFixed(2)}`
+          ].forEach((value) => {
+            const td = document.createElement("td");
+            td.textContent = value;
+            row.appendChild(td);
+          });
+
+          serviceBody.appendChild(row);
         });
-
-        serviceBody.appendChild(row);
       }
 
       serviceTable.append(serviceHead, serviceBody);
@@ -285,6 +286,37 @@ async function loadInventoryItems() {
   return result.data;
 }
 
+// GET SERVICES
+function getServices(container) {
+  return Array.from(container.querySelectorAll(".serviceEntry")).map((entry) => ({
+    serviceType: entry.querySelector(".serviceType").value.trim(),
+    laborCharge: Number(entry.querySelector(".laborCharge").value),
+    serviceDescription: entry.querySelector(".serviceDescription").value.trim() || null
+  }));
+}
+
+// ADD SERVICE
+function addService(container, template, service = null) {
+  const entry = template.content.firstElementChild.cloneNode(true);
+
+  const serviceType = entry.querySelector(".serviceType");
+  const laborCharge = entry.querySelector(".laborCharge");
+  const serviceDescription = entry.querySelector(".serviceDescription");
+  const removeButton = entry.querySelector(".removeServiceButton");
+
+  if (service) {
+    serviceType.value = service.serviceType ?? "";
+    laborCharge.value = service.laborCharge ?? "";
+    serviceDescription.value = service.serviceDescription ?? "";
+  }
+
+  removeButton.addEventListener("click", () => {
+    entry.remove();
+  });
+
+  container.appendChild(entry);
+}
+
 // ADD JOB ORDER ITEM
 function addJobOrderItem(inventoryItems, container, template, item = null) {
   if (!template || !container) {
@@ -349,33 +381,27 @@ function getJobOrderItems(container) {
 
 // OPEN EDIT DIALOG
 function openEditJobOrder(jobOrder, inventoryItems) {
+  const servicesContainer = document.getElementById("editServicesContainer");
+  const serviceTemplate = document.getElementById("editServiceTemplate");
   const modal = document.getElementById("editJobOrderModal");
   const template = document.getElementById("editJobOrderItemTemplate");
   const container = document.getElementById("editJobOrderItemsTableBody");
 
-  if (!modal || !template || !container) {
-    console.error("Edit Job Order: Required elements were not found.");
-    return;
-  }
-
   const jobOrderId = document.getElementById("editJobOrderId");
   const customerName = document.getElementById("editCustomerName");
-  const customerContactNumber = document.getElementById(
-    "editCustomerContactNumber"
-  );
+  const customerContactNumber = document.getElementById("editCustomerContactNumber");
   const motorcycleName = document.getElementById("editMotorcycleName");
   const motorcycleModel = document.getElementById("editMotorcycleModel");
   const repairDate = document.getElementById("editRepairDate");
   const description = document.getElementById("editDescription");
   const repairStatus = document.getElementById("editRepairStatus");
 
-  const serviceType = document.getElementById("editServiceType");
-  const laborCharge = document.getElementById("editLaborCharge");
-  const serviceDescription = document.getElementById(
-    "editServiceDescription"
-  );
-
   if (
+    !servicesContainer ||
+    !serviceTemplate ||
+    !modal ||
+    !template ||
+    !container ||
     !jobOrderId ||
     !customerName ||
     !customerContactNumber ||
@@ -383,12 +409,9 @@ function openEditJobOrder(jobOrder, inventoryItems) {
     !motorcycleModel ||
     !repairDate ||
     !description ||
-    !repairStatus ||
-    !serviceType ||
-    !laborCharge ||
-    !serviceDescription
+    !repairStatus
   ) {
-    console.error("Edit Job Order: One or more form elements were not found.");
+    console.error("Edit Job Order: One or more required elements were not found.");
     return;
   }
 
@@ -401,16 +424,19 @@ function openEditJobOrder(jobOrder, inventoryItems) {
   description.value = jobOrder.description ?? "";
   repairStatus.value = jobOrder.repairStatus ?? "pending";
 
-  const service = jobOrder.serviceRecord;
+  servicesContainer.replaceChildren();
 
-  serviceType.value = service?.serviceType ?? "";
-  laborCharge.value = service?.laborCharge ?? "";
-  serviceDescription.value = service?.serviceDescription ?? "";
+  if (Array.isArray(jobOrder.serviceRecords) && jobOrder.serviceRecords.length > 0) {
+    jobOrder.serviceRecords.forEach((service) => {
+      addService(servicesContainer, serviceTemplate, service);
+    });
+  } else {
+    addService(servicesContainer, serviceTemplate);
+  }
 
   container.replaceChildren();
 
-  if (Array.isArray(jobOrder.jobOrderItems) &&
-    jobOrder.jobOrderItems.length > 0) {
+  if (Array.isArray(jobOrder.jobOrderItems) && jobOrder.jobOrderItems.length > 0) {
     jobOrder.jobOrderItems.forEach((item) => {
       addJobOrderItem(inventoryItems, container, template, item);
     });
@@ -444,8 +470,37 @@ export async function initJobOrdersPage() {
   const editItemsContainer = document.getElementById("editJobOrderItemsTableBody");
   const editItemTemplate = document.getElementById("editJobOrderItemTemplate");
 
-  if (!createButton || !modal || !closeButton || !cancelButton || !form || !editModal || !editForm || !closeEditButton || !cancelEditButton || 
-    !addItemButton || !itemsContainer || !addEditItemButton || !editItemsContainer || !editItemTemplate) {
+
+  const servicesContainer = document.getElementById("servicesContainer");
+  const serviceTemplate = document.getElementById("serviceTemplate");
+  const addServiceButton = document.getElementById("addServiceButton");
+
+  const editServicesContainer = document.getElementById("editServicesContainer");
+  const editServiceTemplate = document.getElementById("editServiceTemplate");
+  const addEditServiceButton = document.getElementById("addEditServiceButton");
+  
+  if (
+    !createButton ||
+    !modal ||
+    !closeButton ||
+    !cancelButton ||
+    !form ||
+    !editModal ||
+    !editForm ||
+    !closeEditButton ||
+    !cancelEditButton ||
+    !addItemButton ||
+    !itemsContainer ||
+    !addEditItemButton ||
+    !editItemsContainer ||
+    !editItemTemplate ||
+    !servicesContainer ||
+    !serviceTemplate ||
+    !addServiceButton ||
+    !editServicesContainer ||
+    !editServiceTemplate ||
+    !addEditServiceButton
+  ) {
     console.error("Job Orders: One or more required HTML elements were not found.");
     return;
   }
@@ -460,19 +515,29 @@ export async function initJobOrdersPage() {
 
   await loadJobOrders(inventoryItems);
 
+  addServiceButton.addEventListener("click", () => {addService(servicesContainer, serviceTemplate);});
+  addEditServiceButton.addEventListener("click", () => {addService(editServicesContainer, editServiceTemplate);});
+
+  // Add the initial service
+  addService(servicesContainer, serviceTemplate);
+
+
+
   // CREATE DIALOG
   closeButton.addEventListener("click", () => {modal.close();});
   cancelButton.addEventListener("click", () => { modal.close();});
-  createButton.addEventListener("click", () => {
 
+  createButton.addEventListener("click", () => {
     setDefaultDate("repairDate");
 
+    servicesContainer.replaceChildren();
     itemsContainer.replaceChildren();
 
     if (inventoryItems.length > 0) {
       addJobOrderItem(inventoryItems, itemsContainer, itemTemplate);
     }
-
+    addService(servicesContainer, serviceTemplate);
+    
     modal.showModal();
   });
 
@@ -485,12 +550,16 @@ export async function initJobOrdersPage() {
     addJobOrderItem(inventoryItems, itemsContainer, itemTemplate);
   });
 
-  form.addEventListener("submit", (event) => {createJobOrder(event, form, modal, itemsContainer, inventoryItems);});
+  form.addEventListener("submit", (event) => {
+    createJobOrder(event, form, modal, itemsContainer, inventoryItems, servicesContainer);
+  });
 
   // EDIT DIALOG
   closeEditButton.addEventListener("click", () => {editModal.close(); });
   cancelEditButton.addEventListener("click", () => {editModal.close();});
-  editForm.addEventListener("submit", (event) => {updateJobOrder(event, editForm, editModal, inventoryItems);});
+  editForm.addEventListener("submit", (event) => {
+    updateJobOrder(event, editForm, editModal, inventoryItems, editServicesContainer);
+  });
 
   addEditItemButton.addEventListener("click", () => {
     if (inventoryItems.length === 0) {
@@ -505,7 +574,7 @@ export async function initJobOrdersPage() {
 // EVENT LISTENER HELPER FUNCTIONS- - - - - - - - - - - - - - - - - - - - - 
 
 // CREATE JOB ORDER
-async function createJobOrder(event, form, modal, itemsContainer, inventoryItems) {
+async function createJobOrder(event, form, modal, itemsContainer, inventoryItems, servicesContainer) {
   event.preventDefault();
 
   const formData = new FormData(form);
@@ -518,11 +587,7 @@ async function createJobOrder(event, form, modal, itemsContainer, inventoryItems
     repairDate: formData.get("repairDate"),
     description: formData.get("description") || null,
     repairStatus: formData.get("repairStatus"),
-    serviceRecord: {
-      serviceType: formData.get("serviceType"),
-      serviceDescription: formData.get("serviceDescription"),
-      laborCharge: Number(formData.get("laborCharge"))
-    },
+    serviceRecords: getServices(servicesContainer),
     jobOrderItems: getJobOrderItems(itemsContainer)
   };
   try {
@@ -559,7 +624,7 @@ async function createJobOrder(event, form, modal, itemsContainer, inventoryItems
 }
 
 // UPDATE JOB ORDER
-async function updateJobOrder(event, form, modal, inventoryItems) {
+async function updateJobOrder(event, form, modal, inventoryItems, editServicesContainer) {
   event.preventDefault();
 
   const formData = new FormData(form);
@@ -574,11 +639,7 @@ async function updateJobOrder(event, form, modal, inventoryItems) {
     repairDate: formData.get("repairDate"),
     description: formData.get("description") || null,
     repairStatus: formData.get("repairStatus"),
-    serviceRecord: {
-      serviceType: formData.get("serviceType"),
-      serviceDescription: formData.get("serviceDescription"),
-      laborCharge: Number(formData.get("laborCharge"))
-    },
+    serviceRecords: getServices(editServicesContainer),
     jobOrderItems: getJobOrderItems(editItemsContainer)
   };
 

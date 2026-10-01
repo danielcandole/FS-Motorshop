@@ -79,7 +79,7 @@ export async function handleUpdateJobOrder(request, response) {
     const employee = await authenticate(request, response);
     if (!employee) {return;}
     if (!await authorized(request, response, "jobOrder.update")) {return;}
-
+    console.log("UPDATE JOB ORDER DATA: ", request.validatedJobOrder);
     const data = await updateJobOrderData(request);
 
     sendJson(response, 200, {message: "Job order updated successfully.", data});

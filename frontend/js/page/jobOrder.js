@@ -67,7 +67,9 @@ async function loadJobOrders(inventoryItems = []) {
       }
 
       // JOB ORDER ITEMS
-      if (row.jobOrderItemId) {
+      const isDuplicateItem = jobOrder.jobOrderItems.some((item) => item.jobOrderItemId === row.jobOrderItemId);
+
+      if (row.jobOrderItemId && !isDuplicateItem) {
         jobOrder.jobOrderItems.push({
           jobOrderItemId: row.jobOrderItemId,
           inventoryItemId: row.inventoryItemId,

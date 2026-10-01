@@ -182,7 +182,7 @@ export function validateJobOrderInput(body) {
       repairDate,
       description: description?.trim() || null,
       repairStatus,
-      serviceRecord: validatedServiceRecord,
+      serviceRecords: validatedServiceRecords,
       jobOrderItems: validatedJobOrderItems
     },
     errors: []

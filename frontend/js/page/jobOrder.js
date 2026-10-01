@@ -1,284 +1,284 @@
   import { setDefaultDate, dateFormat, toDateTimeLocalValue } from "../utils/dateUtils.js";
   import { initBillingDialog } from "./billing.js";
   // LOAD JOB ORDERS
-  async function loadJobOrders(inventoryItems = [], billing = null) {
-    const jobOrdersList = document.getElementById("jobOrdersTableBody");
+async function loadJobOrders(inventoryItems = [], billing = null) {
+  const jobOrdersList = document.getElementById("jobOrdersTableBody");
 
-    if (!jobOrdersList) {
-      console.error("Job Orders: List container was not found.");
+  if (!jobOrdersList) {
+    console.error("Job Orders: List container was not found.");
+    return;
+  }
+
+  jobOrdersList.textContent = "Loading job orders...";
+
+  try {
+    const response = await fetch("/api/job-orders", {
+      method: "GET",
+      credentials: "same-origin"
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || "Failed to load job orders.");
+    }
+
+    const jobOrders = result.data;
+    console.log("JOB ORDER DATA: ", jobOrders);
+    if (!Array.isArray(jobOrders) || jobOrders.length === 0) {
+      jobOrdersList.textContent = "No job orders available.";
       return;
     }
 
-    jobOrdersList.textContent = "Loading job orders...";
+    // GROUP JOB ORDERS AND THEIR ITEMS
+    const groupedJobOrders = new Map();
 
-    try {
-      const response = await fetch("/api/job-orders", {
-        method: "GET",
-        credentials: "same-origin"
-      });
+    jobOrders.forEach((row) => {
+      let jobOrder = groupedJobOrders.get(row.jobOrderId);
 
-      const result = await response.json();
+      if (!jobOrder) {
+        jobOrder = {
+          jobOrderId: row.jobOrderId,
+          customerRecordId: row.customerRecordId,
+          customerName: row.customerName,
+          contactNo: row.contactNo,
+          motorcycleRecordId: row.motorcycleRecordId,
+          motorcycleName: row.motorcycleName,
+          motorcycleModel: row.motorcycleModel,
+          repairDate: row.repairDate,
+          description: row.description,
+          repairStatus: row.repairStatus,
+          serviceBillId: row.serviceBillId ?? null,
+          serviceRecords: [],
+          jobOrderItems: []
+        };
 
-      if (!response.ok) {
-        throw new Error(result.message || "Failed to load job orders.");
+        groupedJobOrders.set(row.jobOrderId, jobOrder);
       }
 
-      const jobOrders = result.data;
-      console.log("JOB ORDER DATA: ", jobOrders);
-      if (!Array.isArray(jobOrders) || jobOrders.length === 0) {
-        jobOrdersList.textContent = "No job orders available.";
-        return;
+      const isDuplicate = jobOrder.serviceRecords.some((service) => service.serviceRecordId === row.serviceRecordId);
+
+      if (row.serviceRecordId && !isDuplicate) {
+        jobOrder.serviceRecords.push({
+          serviceRecordId: row.serviceRecordId,
+          serviceType: row.serviceType,
+          serviceDescription: row.serviceDescription,
+          laborCharge: row.laborCharge
+        });
       }
 
-      // GROUP JOB ORDERS AND THEIR ITEMS
-      const groupedJobOrders = new Map();
+      // JOB ORDER ITEMS
+      const isDuplicateItem = jobOrder.jobOrderItems.some((item) => item.jobOrderItemId === row.jobOrderItemId);
 
-      jobOrders.forEach((row) => {
-        let jobOrder = groupedJobOrders.get(row.jobOrderId);
+      if (row.jobOrderItemId && !isDuplicateItem) {
+        jobOrder.jobOrderItems.push({
+          jobOrderItemId: row.jobOrderItemId,
+          inventoryItemId: row.inventoryItemId,
+          itemName: row.itemName,
+          quantityUsed: row.quantityUsed,
+          unitPrice: row.unitPrice
+        });
+      }
+    });
 
-        if (!jobOrder) {
-          jobOrder = {
-            jobOrderId: row.jobOrderId,
-            customerRecordId: row.customerRecordId,
-            customerName: row.customerName,
-            contactNo: row.contactNo,
-            motorcycleRecordId: row.motorcycleRecordId,
-            motorcycleName: row.motorcycleName,
-            motorcycleModel: row.motorcycleModel,
-            repairDate: row.repairDate,
-            description: row.description,
-            repairStatus: row.repairStatus,
-            serviceBill: row.serviceBill ?? null,
-            serviceRecords: [],
-            jobOrderItems: []
-          };
+    jobOrdersList.replaceChildren();
 
-          groupedJobOrders.set(row.jobOrderId, jobOrder);
-        }
+    groupedJobOrders.forEach((jobOrder) => {
+      const card = document.createElement("article");
+      card.classList.add("jobOrderCard");
 
-        const isDuplicate = jobOrder.serviceRecords.some((service) => service.serviceRecordId === row.serviceRecordId);
+      // HEADER
+      const header = document.createElement("header");
+      header.classList.add("jobOrderCardHeader");
 
-        if (row.serviceRecordId && !isDuplicate) {
-          jobOrder.serviceRecords.push({
-            serviceRecordId: row.serviceRecordId,
-            serviceType: row.serviceType,
-            serviceDescription: row.serviceDescription,
-            laborCharge: row.laborCharge
-          });
-        }
+      const title = document.createElement("h3");
+      title.textContent = `JOB ORDER #${String(jobOrder.jobOrderId).padStart(3, "0")}`;
 
-        // JOB ORDER ITEMS
-        const isDuplicateItem = jobOrder.jobOrderItems.some((item) => item.jobOrderItemId === row.jobOrderItemId);
+      const actions = document.createElement("div");
+      actions.classList.add("jobOrderCardActions");
 
-        if (row.jobOrderItemId && !isDuplicateItem) {
-          jobOrder.jobOrderItems.push({
-            jobOrderItemId: row.jobOrderItemId,
-            inventoryItemId: row.inventoryItemId,
-            itemName: row.itemName,
-            quantityUsed: row.quantityUsed,
-            unitPrice: row.unitPrice
-          });
-        }
+      const editButton = document.createElement("button");
+      editButton.type = "button";
+      editButton.classList.add("secondaryButton");
+      editButton.textContent = "Edit";
+
+      editButton.addEventListener("click", () => {
+        openEditJobOrder(jobOrder, inventoryItems);
       });
 
-      jobOrdersList.replaceChildren();
+      const deleteButton = document.createElement("button");
+      deleteButton.type = "button";
+      deleteButton.classList.add("dangerButton");
+      deleteButton.textContent = "Delete";
 
-      groupedJobOrders.forEach((jobOrder) => {
-        const card = document.createElement("article");
-        card.classList.add("jobOrderCard");
+      deleteButton.addEventListener("click", () => {
+        deleteJobOrder(jobOrder.jobOrderId, inventoryItems);
+      });
 
-        // HEADER
-        const header = document.createElement("header");
-        header.classList.add("jobOrderCardHeader");
+      const billButton = document.createElement("button");
+      billButton.type = "button";
+      billButton.classList.add("billButton");
+      billButton.textContent = jobOrder.serviceBillId ? "See Bill" : "Create Bill";
+      
+      billButton.addEventListener("click", () => {
+        billing.openBill(jobOrder.jobOrderId);
+      });
+      
+      actions.append(billButton, editButton, deleteButton);
+      header.append(title, actions);
 
-        const title = document.createElement("h3");
-        title.textContent = `JOB ORDER #${String(jobOrder.jobOrderId).padStart(3, "0")}`;
+      // JOB ORDER INFORMATION
+      const information = document.createElement("section");
+      information.classList.add("jobOrderInformation");
 
-        const actions = document.createElement("div");
-        actions.classList.add("jobOrderCardActions");
+      const details = [
+        ["Customer:", jobOrder.customerName],
+        ["Motorcycle:", jobOrder.motorcycleName],
+        ["Contact Number:", jobOrder.contactNo],
+        ["Model:", jobOrder.motorcycleModel],
+        ["Repair Date:", dateFormat(jobOrder.repairDate)],
+        ["Status:", jobOrder.repairStatus],
+        ["Reported Problem:", jobOrder.description]
+      ];
 
-        const editButton = document.createElement("button");
-        editButton.type = "button";
-        editButton.classList.add("secondaryButton");
-        editButton.textContent = "Edit";
+      details.forEach(([label, value]) => {
+        const detail = document.createElement("p");
+        detail.classList.add("jobOrderDetail");
 
-        editButton.addEventListener("click", () => {
-          openEditJobOrder(jobOrder, inventoryItems);
-        });
+        const strong = document.createElement("strong");
+        strong.textContent = label;
 
-        const deleteButton = document.createElement("button");
-        deleteButton.type = "button";
-        deleteButton.classList.add("dangerButton");
-        deleteButton.textContent = "Delete";
+        const span = document.createElement("span");
+        span.textContent = value ?? "N/A";
 
-        deleteButton.addEventListener("click", () => {
-          deleteJobOrder(jobOrder.jobOrderId, inventoryItems);
-        });
+        detail.append(strong, document.createTextNode(" "), span);
+        information.appendChild(detail);
+      });
 
-        const billButton = document.createElement("button");
-        billButton.type = "button";
-        billButton.classList.add("billButton");
-        billButton.textContent = jobOrder.serviceBill ? "See Bill" : "Create Bill";
+      // SERVICE RECORD
+      const serviceSection = document.createElement("section");
+      serviceSection.classList.add("jobOrderService");
 
-        billButton.addEventListener("click", () => {
-          billing.openBill(jobOrder.jobOrderId);
-        });
-        
-        actions.append(billButton, editButton, deleteButton);
-        header.append(title, actions);
+      const serviceTitle = document.createElement("h4");
+      serviceTitle.textContent = "SERVICE RECORD";
 
-        // JOB ORDER INFORMATION
-        const information = document.createElement("section");
-        information.classList.add("jobOrderInformation");
+      const serviceTable = document.createElement("table");
+      serviceTable.classList.add("jobOrderDetailsTable");
 
-        const details = [
-          ["Customer:", jobOrder.customerName],
-          ["Motorcycle:", jobOrder.motorcycleName],
-          ["Contact Number:", jobOrder.contactNo],
-          ["Model:", jobOrder.motorcycleModel],
-          ["Repair Date:", dateFormat(jobOrder.repairDate)],
-          ["Status:", jobOrder.repairStatus],
-          ["Reported Problem:", jobOrder.description]
-        ];
+      const serviceHead = document.createElement("thead");
+      const serviceHeadRow = document.createElement("tr");
 
-        details.forEach(([label, value]) => {
-          const detail = document.createElement("p");
-          detail.classList.add("jobOrderDetail");
+      ["Service Type", "Description", "Labor Charge"].forEach((heading) => {
+        const th = document.createElement("th");
+        th.scope = "col";
+        th.textContent = heading;
+        serviceHeadRow.appendChild(th);
+      });
 
-          const strong = document.createElement("strong");
-          strong.textContent = label;
+      serviceHead.appendChild(serviceHeadRow);
 
-          const span = document.createElement("span");
-          span.textContent = value ?? "N/A";
+      const serviceBody = document.createElement("tbody");
 
-          detail.append(strong, document.createTextNode(" "), span);
-          information.appendChild(detail);
-        });
+      if (jobOrder.serviceRecords.length === 0) {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
 
-        // SERVICE RECORD
-        const serviceSection = document.createElement("section");
-        serviceSection.classList.add("jobOrderService");
+        cell.colSpan = 3;
+        cell.textContent = "No service record";
 
-        const serviceTitle = document.createElement("h4");
-        serviceTitle.textContent = "SERVICE RECORD";
-
-        const serviceTable = document.createElement("table");
-        serviceTable.classList.add("jobOrderDetailsTable");
-
-        const serviceHead = document.createElement("thead");
-        const serviceHeadRow = document.createElement("tr");
-
-        ["Service Type", "Description", "Labor Charge"].forEach((heading) => {
-          const th = document.createElement("th");
-          th.scope = "col";
-          th.textContent = heading;
-          serviceHeadRow.appendChild(th);
-        });
-
-        serviceHead.appendChild(serviceHeadRow);
-
-        const serviceBody = document.createElement("tbody");
-
-        if (jobOrder.serviceRecords.length === 0) {
+        row.appendChild(cell);
+        serviceBody.appendChild(row);
+      } else {
+        jobOrder.serviceRecords.forEach((service) => {
           const row = document.createElement("tr");
-          const cell = document.createElement("td");
 
-          cell.colSpan = 3;
-          cell.textContent = "No service record";
+          [
+            service.serviceType ?? "N/A",
+            service.serviceDescription ?? "N/A",
+            `₱${Number(service.laborCharge).toFixed(2)}`
+          ].forEach((value) => {
+            const td = document.createElement("td");
+            td.textContent = value;
+            row.appendChild(td);
+          });
 
-          row.appendChild(cell);
           serviceBody.appendChild(row);
-        } else {
-          jobOrder.serviceRecords.forEach((service) => {
-            const row = document.createElement("tr");
-
-            [
-              service.serviceType ?? "N/A",
-              service.serviceDescription ?? "N/A",
-              `₱${Number(service.laborCharge).toFixed(2)}`
-            ].forEach((value) => {
-              const td = document.createElement("td");
-              td.textContent = value;
-              row.appendChild(td);
-            });
-
-            serviceBody.appendChild(row);
-          });
-        }
-
-        serviceTable.append(serviceHead, serviceBody);
-        serviceSection.append(serviceTitle, serviceTable);
-
-        // JOB ORDER ITEMS
-        const itemsSection = document.createElement("section");
-        itemsSection.classList.add("jobOrderItems");
-
-        const itemsTitle = document.createElement("h4");
-        itemsTitle.textContent = "PARTS AND INVENTORY";
-
-        const itemsTable = document.createElement("table");
-        itemsTable.classList.add("jobOrderDetailsTable");
-
-        const itemsHead = document.createElement("thead");
-        const itemsHeadRow = document.createElement("tr");
-
-        ["Item", "Quantity Used", "Unit Price"].forEach((heading) => {
-          const th = document.createElement("th");
-          th.scope = "col";
-          th.textContent = heading;
-          itemsHeadRow.appendChild(th);
         });
+      }
 
-        itemsHead.appendChild(itemsHeadRow);
+      serviceTable.append(serviceHead, serviceBody);
+      serviceSection.append(serviceTitle, serviceTable);
 
-        const itemsBody = document.createElement("tbody");
+      // JOB ORDER ITEMS
+      const itemsSection = document.createElement("section");
+      itemsSection.classList.add("jobOrderItems");
 
-        if (jobOrder.jobOrderItems.length === 0) {
-          const row = document.createElement("tr");
-          const cell = document.createElement("td");
+      const itemsTitle = document.createElement("h4");
+      itemsTitle.textContent = "PARTS AND INVENTORY";
 
-          cell.colSpan = 3;
-          cell.textContent = "No parts used";
+      const itemsTable = document.createElement("table");
+      itemsTable.classList.add("jobOrderDetailsTable");
 
-          row.appendChild(cell);
-          itemsBody.appendChild(row);
-        } else {
-          jobOrder.jobOrderItems.forEach((item) => {
-            const row = document.createElement("tr");
+      const itemsHead = document.createElement("thead");
+      const itemsHeadRow = document.createElement("tr");
 
-            [
-              item.itemName ?? "N/A",
-              item.quantityUsed ?? "N/A",
-              `₱${Number(item.unitPrice).toFixed(2)}`
-            ].forEach((value) => {
-              const td = document.createElement("td");
-              td.textContent = value;
-              row.appendChild(td);
-            });
-
-            itemsBody.appendChild(row);
-          });
-        }
-
-        itemsTable.append(itemsHead, itemsBody);
-        itemsSection.append(itemsTitle, itemsTable);
-
-        // APPEND CARD
-        card.append(
-          header,
-          information,
-          serviceSection,
-          itemsSection
-        );
-
-        jobOrdersList.appendChild(card);
+      ["Item", "Quantity Used", "Unit Price"].forEach((heading) => {
+        const th = document.createElement("th");
+        th.scope = "col";
+        th.textContent = heading;
+        itemsHeadRow.appendChild(th);
       });
-    }
-    catch (error) {
-      console.error("Load Job Orders:", error);
-      jobOrdersList.textContent = "Failed to load job orders.";
-    }
+
+      itemsHead.appendChild(itemsHeadRow);
+
+      const itemsBody = document.createElement("tbody");
+
+      if (jobOrder.jobOrderItems.length === 0) {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+
+        cell.colSpan = 3;
+        cell.textContent = "No parts used";
+
+        row.appendChild(cell);
+        itemsBody.appendChild(row);
+      } else {
+        jobOrder.jobOrderItems.forEach((item) => {
+          const row = document.createElement("tr");
+
+          [
+            item.itemName ?? "N/A",
+            item.quantityUsed ?? "N/A",
+            `₱${Number(item.unitPrice).toFixed(2)}`
+          ].forEach((value) => {
+            const td = document.createElement("td");
+            td.textContent = value;
+            row.appendChild(td);
+          });
+
+          itemsBody.appendChild(row);
+        });
+      }
+
+      itemsTable.append(itemsHead, itemsBody);
+      itemsSection.append(itemsTitle, itemsTable);
+
+      // APPEND CARD
+      card.append(
+        header,
+        information,
+        serviceSection,
+        itemsSection
+      );
+
+      jobOrdersList.appendChild(card);
+    });
   }
+  catch (error) {
+    console.error("Load Job Orders:", error);
+    jobOrdersList.textContent = "Failed to load job orders.";
+  }
+}
 
   // LOAD INVENTORY ITEMS
   async function loadInventoryItems() {

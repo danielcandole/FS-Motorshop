@@ -66,74 +66,91 @@ async function readBillingJobOrderItems(jobOrderId) {
   return { jobOrderItems, partsTotal };
 }
 
+// READ EXISTING BILLING RECORDS
+async function readExistingServiceBill(jobOrderId) {
+  const [rows] = await pool.execute(`
+    SELECT
+      sb.serviceBillId,
+      sb.jobOrderId,
+      sb.partsTotal,
+      sb.laborTotal,
+      sb.otherCharges,
+      sb.discount,
+      sb.totalAmount,
+      pr.paymentRecordId,
+      pr.paymentDate,
+      pr.paymentAmount,
+      pr.paymentBalance,
+      r.paymentReceiptId,
+      r.receiptNumber,
+      r.receiptDate,
+      r.receiptFile
+    FROM serviceBill AS sb
+    LEFT JOIN paymentRecord AS pr
+      ON pr.serviceBillId = sb.serviceBillId
+    LEFT JOIN receipt AS r
+      ON r.paymentRecordId = pr.paymentRecordId
+    WHERE sb.jobOrderId = ?
+    LIMIT 1
+  `, [jobOrderId]);
+
+  const row = rows[0];
+  if (!row) return null;
+
+  return {
+    serviceBillId: row.serviceBillId,
+    jobOrderId: row.jobOrderId,
+    partsTotal: Number(row.partsTotal),
+    laborTotal: Number(row.laborTotal),
+    otherCharges: row.otherCharges === null ? null : Number(row.otherCharges),
+    discount: row.discount === null ? null : Number(row.discount),
+    totalAmount: Number(row.totalAmount),
+    paymentRecord: row.paymentRecordId ? {
+      paymentRecordId: row.paymentRecordId,
+      paymentDate: row.paymentDate,
+      paymentAmount: Number(row.paymentAmount),
+      paymentBalance: Number(row.paymentBalance),
+      receipt: row.paymentReceiptId ? {
+        paymentReceiptId: row.paymentReceiptId,
+        receiptNumber: row.receiptNumber,
+        receiptDate: row.receiptDate,
+        receiptFile: row.receiptFile
+      } : null
+    } : null,
+    paymentAmount: row.paymentRecordId ? Number(row.paymentAmount) : null,
+    paymentDate: row.paymentDate,
+    receiptDate: row.receiptDate
+  };
+}
+
 // READ JOB ORDER BILLING DATA
 export async function readJobOrderBillingData(request) {
   try {
     const jobOrder = await readBillingJobOrder(request.jobOrderId);
+    if (!jobOrder) return null;
 
-    if (!jobOrder) {
-      return null;
-    }
-
-    const [services, items] = await Promise.all([
+    const [services, items, serviceBill] = await Promise.all([
       readBillingServiceRecords(request.jobOrderId),
-      readBillingJobOrderItems(request.jobOrderId)
+      readBillingJobOrderItems(request.jobOrderId),
+      readExistingServiceBill(request.jobOrderId)
     ]);
 
-    return {
-      ...jobOrder,
-      ...services,
-      ...items
-    };
+    return { ...jobOrder, ...services, ...items, serviceBill };
   }
   catch (error) {
     console.error("Read Job Order Billing Data:", error);
     throw error;
   }
 }
-// readJobOrderBillingData returns an object
-const returnDataTesting = 
-{
-  jobOrderId: 16,
-  customerName: "James",
-  customerContactNo: "234234",
-  motorcycleName: "Suzimi",
-  motorcycleModel: "testing",
-  serviceRecords: [
-    {
-      serviceRecordId: 1,
-      serviceType: "Change oil",
-      serviceDescription: "Oil replacement",
-      laborCharge: "500.00"
-    }
-  ],
-  laborTotal: 500,
-  jobOrderItems: [
-    {
-      jobOrderItemId: 1,
-      inventoryItemId: 8,
-      itemName: "Engine Oil",
-      quantityUsed: 2,
-      unitPrice: "350.00",
-      totalPrice: "700.00"
-    }
-  ],
-  partsTotal: 700
-}
-
 
 // CREATE BILLING DATA
 export async function createBillingData(request) {
   const {
     jobOrderId,
-    partsTotal,
-    laborTotal,
     otherCharges,
     discount,
-    totalAmount,
     paymentDate,
     paymentAmount,
-    paymentBalance,
     receiptDate
   } = request.validatedBilling;
 
@@ -142,67 +159,120 @@ export async function createBillingData(request) {
   try {
     await connection.beginTransaction();
 
-    // 1. CREATE SERVICE BILL
-    const [serviceBillResult] = await connection.execute(
-      `INSERT INTO serviceBill (
+    const [jobOrders] = await connection.execute(`
+      SELECT jobOrderId
+      FROM jobOrder
+      WHERE jobOrderId = ?
+        AND deletedAt IS NULL
+      FOR UPDATE
+    `, [jobOrderId]);
+
+    if (!jobOrders.length) {
+      throw new Error("Job order not found.");
+    }
+
+    const [existingBills] = await connection.execute(`
+      SELECT serviceBillId
+      FROM serviceBill
+      WHERE jobOrderId = ?
+      FOR UPDATE
+    `, [jobOrderId]);
+
+    if (existingBills.length) {
+      throw new Error("A bill already exists for this job order.");
+    }
+
+    const [services, items] = await Promise.all([
+      readBillingServiceRecords(jobOrderId),
+      readBillingJobOrderItems(jobOrderId)
+    ]);
+
+    const partsTotal = Number(items.partsTotal.toFixed(2));
+    const laborTotal = Number(services.laborTotal.toFixed(2));
+
+    const totalAmount = Number((
+      partsTotal +
+      laborTotal +
+      Number(otherCharges || 0) -
+      Number(discount || 0)
+    ).toFixed(2));
+
+    if (totalAmount < 0 || paymentAmount > totalAmount) {
+      throw new Error("Invalid bill or payment amount.");
+    }
+
+    const paymentBalance = Number(
+      (totalAmount - paymentAmount).toFixed(2)
+    );
+
+    const [billResult] = await connection.execute(`
+      INSERT INTO serviceBill (
         jobOrderId,
         partsTotal,
         laborTotal,
         otherCharges,
         discount,
         totalAmount
-      ) VALUES (?, ?, ?, ?, ?, ?)`,
-      [jobOrderId, partsTotal, laborTotal, otherCharges, discount, totalAmount]
-    );
+      )
+      VALUES (?, ?, ?, ?, ?, ?)
+    `, [
+      jobOrderId,
+      partsTotal,
+      laborTotal,
+      otherCharges,
+      discount,
+      totalAmount
+    ]);
 
-    const serviceBillId = serviceBillResult.insertId;
+    const serviceBillId = billResult.insertId;
 
-    // 2. CREATE PAYMENT RECORD
-    const [paymentResult] = await connection.execute(
-      `INSERT INTO paymentRecord (
+    const [paymentResult] = await connection.execute(`
+      INSERT INTO paymentRecord (
         serviceBillId,
         paymentDate,
         paymentAmount,
         paymentBalance
-      ) VALUES (?, ?, ?, ?)`,
-      [
-        serviceBillId,
-        `${paymentDate.replace("T", " ")}:00`,
-        paymentAmount,
-        paymentBalance
-      ]
-    );
+      )
+      VALUES (?, ?, ?, ?)
+    `, [
+      serviceBillId,
+      `${paymentDate.replace("T", " ")}:00`,
+      paymentAmount,
+      paymentBalance
+    ]);
 
     const paymentRecordId = paymentResult.insertId;
 
-    // 3. CREATE RECEIPT
     const formattedReceiptDate = new Date(receiptDate)
       .toISOString()
       .slice(0, 19)
       .replace("T", " ");
 
-    const [receiptResult] = await connection.execute(
-      `INSERT INTO receipt (
+    const [receiptResult] = await connection.execute(`
+      INSERT INTO receipt (
         paymentRecordId,
         receiptNumber,
         receiptDate,
         receiptFile
-      ) VALUES (?, ?, ?, ?)`,
-      [paymentRecordId, "", formattedReceiptDate, null]
-    );
+      )
+      VALUES (?, ?, ?, ?)
+    `, [paymentRecordId, "", formattedReceiptDate, null]);
 
     const paymentReceiptId = receiptResult.insertId;
 
-    // 4. GENERATE RECEIPT NUMBER
-    const receiptDateTime = new Date(receiptDate).toISOString().slice(0, 16).replace(/[-:T]/g, "");
-    const receiptNumber = `${receiptDateTime.slice(0, 8)}-${receiptDateTime.slice(8)}-${paymentReceiptId}`;
+    const receiptDateTime = new Date(receiptDate)
+      .toISOString()
+      .slice(0, 16)
+      .replace(/[-:T]/g, "");
 
-    await connection.execute(
-      `UPDATE receipt
-       SET receiptNumber = ?
-       WHERE paymentReceiptId = ?`,
-      [receiptNumber, paymentReceiptId]
-    );
+    const receiptNumber =
+      `${receiptDateTime.slice(0, 8)}-${receiptDateTime.slice(8)}-${paymentReceiptId}`;
+
+    await connection.execute(`
+      UPDATE receipt
+      SET receiptNumber = ?
+      WHERE paymentReceiptId = ?
+    `, [receiptNumber, paymentReceiptId]);
 
     await connection.commit();
 
@@ -222,15 +292,159 @@ export async function createBillingData(request) {
   }
 }
 
+// READ BILLING DATA
 export async function readBillingData(request) {
+  const [rows] = await pool.execute(`
+    SELECT
+      sb.serviceBillId,
+      sb.jobOrderId,
+      sb.partsTotal,
+      sb.laborTotal,
+      sb.otherCharges,
+      sb.discount,
+      sb.totalAmount,
+      pr.paymentRecordId,
+      pr.paymentDate,
+      pr.paymentAmount,
+      pr.paymentBalance,
+      r.paymentReceiptId,
+      r.receiptNumber,
+      r.receiptDate,
+      r.receiptFile
+    FROM serviceBill AS sb
+    LEFT JOIN paymentRecord AS pr
+      ON pr.serviceBillId = sb.serviceBillId
+    LEFT JOIN receipt AS r
+      ON r.paymentRecordId = pr.paymentRecordId
+    WHERE sb.serviceBillId = ?
+    LIMIT 1
+  `, [request.serviceBillId]);
 
+  return rows[0] || null;
 }
 
+// UPDATE BILLING DATA
 export async function updateBillingData(request) {
+  const {
+    otherCharges,
+    discount,
+    paymentDate,
+    paymentAmount,
+    receiptDate
+  } = request.validatedBilling;
 
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const [rows] = await connection.execute(`
+      SELECT
+        sb.serviceBillId,
+        sb.jobOrderId,
+        pr.paymentRecordId,
+        r.paymentReceiptId
+      FROM serviceBill AS sb
+      INNER JOIN paymentRecord AS pr
+        ON pr.serviceBillId = sb.serviceBillId
+      INNER JOIN receipt AS r
+        ON r.paymentRecordId = pr.paymentRecordId
+      WHERE sb.serviceBillId = ?
+      FOR UPDATE
+    `, [request.serviceBillId]);
+
+    if (!rows.length) {
+      throw new Error("Billing record not found.");
+    }
+
+    const bill = rows[0];
+
+    const [services, items] = await Promise.all([
+      readBillingServiceRecords(bill.jobOrderId),
+      readBillingJobOrderItems(bill.jobOrderId)
+    ]);
+
+    const partsTotal = Number(items.partsTotal.toFixed(2));
+    const laborTotal = Number(services.laborTotal.toFixed(2));
+
+    const totalAmount = Number((
+      partsTotal +
+      laborTotal +
+      Number(otherCharges || 0) -
+      Number(discount || 0)
+    ).toFixed(2));
+
+    if (totalAmount < 0 || paymentAmount > totalAmount) {
+      throw new Error("Invalid bill or payment amount.");
+    }
+
+    const paymentBalance = Number(
+      (totalAmount - paymentAmount).toFixed(2)
+    );
+
+    const formattedPaymentDate =
+      `${paymentDate.replace("T", " ")}:00`;
+
+    const formattedReceiptDate = new Date(receiptDate)
+      .toISOString()
+      .slice(0, 19)
+      .replace("T", " ");
+
+    await connection.execute(`
+      UPDATE serviceBill
+      SET
+        partsTotal = ?,
+        laborTotal = ?,
+        otherCharges = ?,
+        discount = ?,
+        totalAmount = ?
+      WHERE serviceBillId = ?
+    `, [
+      partsTotal,
+      laborTotal,
+      otherCharges,
+      discount,
+      totalAmount,
+      request.serviceBillId
+    ]);
+
+    await connection.execute(`
+      UPDATE paymentRecord
+      SET
+        paymentDate = ?,
+        paymentAmount = ?,
+        paymentBalance = ?
+      WHERE paymentRecordId = ?
+    `, [
+      formattedPaymentDate,
+      paymentAmount,
+      paymentBalance,
+      bill.paymentRecordId
+    ]);
+
+    await connection.execute(`
+      UPDATE receipt
+      SET receiptDate = ?
+      WHERE paymentReceiptId = ?
+    `, [formattedReceiptDate, bill.paymentReceiptId]);
+
+    await connection.commit();
+
+    return {
+      serviceBillId: request.serviceBillId,
+      paymentRecordId: bill.paymentRecordId,
+      paymentReceiptId: bill.paymentReceiptId
+    };
+  }
+  catch (error) {
+    await connection.rollback();
+    throw error;
+  }
+  finally {
+    connection.release();
+  }
 }
 
-export async function deleteBillingData(request) {
-
+export async function deleteBillingData() {
+  throw new Error("Deleting billing records is not implemented.");
 }
-

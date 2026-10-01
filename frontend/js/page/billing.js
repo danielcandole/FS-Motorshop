@@ -103,7 +103,7 @@ export function initBillingDialog() {
 
   closeBillingButton.addEventListener("click", () => billingDialog.close());
   cancelBillingButton.addEventListener("click", () => billingDialog.close());
-
+  
   billingForm.addEventListener("submit", (event) => {
     if (billingMode === "edit") {
       updateBilling(event, billingJobOrder);
@@ -114,6 +114,9 @@ export function initBillingDialog() {
 
   return {
     dialog: billingDialog,
+    get mode() {
+      return billingMode;
+    },
     openBill: async (jobOrderId) => {
       try {
         const jobOrder = await fetchBillingData(jobOrderId);

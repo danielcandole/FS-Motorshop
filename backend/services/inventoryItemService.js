@@ -1,5 +1,39 @@
 import pool from "../config/database.js";
 import { createStockTransaction, getStockTransactionDetails } from "./stockTransactionService.js";
+
+// DEDUCT INVENTORY STOCK
+export async function deductInventoryStock(connection, inventoryItemId, quantity) {
+  const [items] = await connection.execute(`
+    SELECT quantity
+    FROM inventoryItem
+    WHERE inventoryItemId = ?
+      AND deletedAt IS NULL
+    LIMIT 1
+    FOR UPDATE
+  `, [inventoryItemId]);
+
+  if (items.length === 0) {
+    throw new Error("Inventory item not found.");
+  }
+
+  if (items[0].quantity < quantity) {
+    throw new Error(`Insufficient stock for inventory item ${inventoryItemId}.`);
+  }
+
+  await connection.execute(`
+    UPDATE inventoryItem
+    SET quantity = quantity - ?
+    WHERE inventoryItemId = ?
+  `, [quantity, inventoryItemId]);
+
+  await createStockTransaction(
+    connection,
+    quantity,
+    "Stock Out",
+    { inventoryItemId }
+  );
+}
+
 // GET INVENTORY ITEM BY ID
 export async function getInventoryItemById(inventoryItemId) {
   try {

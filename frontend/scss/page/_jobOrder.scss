@@ -292,3 +292,175 @@
     margin-top: 4px;
   }
 }
+
+
+.billingDialog {
+  width: min(700px, calc(100% - 32px));
+  max-height: 90vh;
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  background: #fff;
+  color: #222;
+  box-shadow: 0 12px 40px rgb(0 0 0 / 25%);
+
+  &::backdrop {
+    background: rgb(0 0 0 / 55%);
+  }
+}
+
+.billingForm {
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
+
+.billingHeader,
+.billingFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid #ddd;
+
+  h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    text-transform: uppercase;
+  }
+}
+
+.closeButton {
+  border: none;
+  background: none;
+  font-size: 1.75rem;
+  cursor: pointer;
+}
+
+.billingContent {
+  overflow-y: auto;
+  padding: 0 24px;
+}
+
+.billingSection {
+  padding: 20px 0;
+  border-bottom: 1px solid #ddd;
+
+  h3 {
+    margin: 0 0 16px;
+    font-size: 1rem;
+    text-transform: uppercase;
+  }
+}
+
+.billingDetails {
+  display: grid;
+  gap: 12px;
+
+  div {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 12px;
+  }
+
+  span {
+    color: #666;
+  }
+
+  strong {
+    font-weight: 500;
+    overflow-wrap: anywhere;
+  }
+}
+
+.billingFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+
+    > span {
+      color: #555;
+      font-size: 0.9rem;
+    }
+
+    input {
+      box-sizing: border-box;
+      width: 100%;
+      min-width: 0;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font: inherit;
+
+      &:focus {
+        outline: 2px solid #3978d4;
+        border-color: transparent;
+      }
+
+      &:read-only {
+        background: #f2f2f2;
+      }
+    }
+  }
+}
+
+.currencyField {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  > span {
+    color: #555;
+  }
+}
+
+.billingTotal,
+.billingBalance {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+  font-weight: 600;
+
+  strong {
+    font-size: 1.1rem;
+  }
+}
+
+.billingFooter {
+  justify-content: flex-end;
+  gap: 12px;
+  border-top: 1px solid #ddd;
+  border-bottom: none;
+}
+
+.cancelButton,
+.saveButton {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 6px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.cancelButton {
+  background: #e8e8e8;
+  color: #222;
+}
+
+.saveButton {
+  background: #2563eb;
+  color: #fff;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}

@@ -5,7 +5,7 @@ import { createJobOrderData, readJobOrderData, updateJobOrderData, deleteJobOrde
 import { sendJson } from "../../frontend/js/utils/jsonUtils.js";
 
 export async function handleCreateJobOrder(request, response) {
-  console.log("requested body: ",request.body);
+
   const validation = validateJobOrderInput(request.body);
   if (!validation.valid) {
     sendJson(response, 400, {
@@ -79,7 +79,7 @@ export async function handleUpdateJobOrder(request, response) {
     const employee = await authenticate(request, response);
     if (!employee) {return;}
     if (!await authorized(request, response, "jobOrder.update")) {return;}
-
+    console.log("UPDATE JOB ORDER DATA: ", request.validatedJobOrder);
     const data = await updateJobOrderData(request);
 
     sendJson(response, 200, {message: "Job order updated successfully.", data});

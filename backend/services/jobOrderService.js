@@ -1,4 +1,6 @@
 import pool from "../config/database.js";
+import { deductInventoryStock } from "./inventoryItemService.js";
+import { createStockTransaction } from "./stockTransactionService.js";
 
 export async function createJobOrderData(request) {
   const connection = await pool.getConnection();
@@ -14,7 +16,7 @@ export async function createJobOrderData(request) {
       repairDate,
       description,
       repairStatus,
-      serviceRecord,
+      serviceRecords,
       jobOrderItems
     } = request.validatedJobOrder;
 
@@ -56,9 +58,9 @@ export async function createJobOrderData(request) {
 
     const jobOrderId = jobOrderResult.insertId;
 
-    // Create service record
-    if (serviceRecord) {
-      const { serviceType, serviceDescription, laborCharge } = serviceRecord;
+    // CREATE SERVICE RECORDS
+    for (const service of serviceRecords) {
+      const {serviceType, serviceDescription, laborCharge} = service;
 
       await connection.execute(`
         INSERT INTO serviceRecord (
@@ -79,6 +81,8 @@ export async function createJobOrderData(request) {
     // Create job order items
     for (const item of jobOrderItems) {
       const {inventoryItemId, quantityUsed, unitPrice } = item;
+
+      await deductInventoryStock(connection, inventoryItemId, quantityUsed);
 
       await connection.execute(`
         INSERT INTO jobOrderItem (
@@ -176,7 +180,7 @@ export async function updateJobOrderData(request) {
       repairDate,
       description,
       repairStatus,
-      serviceRecord,
+      serviceRecords,
       jobOrderItems
     } = request.validatedJobOrder;
 
@@ -222,46 +226,80 @@ export async function updateJobOrderData(request) {
         AND deletedAt IS NULL
     `, [formattedRepairDate, description || null, repairStatus, jobOrderId]);
 
-    // UPDATE SERVICE RECORD
-    const [serviceRecords] = await connection.execute(`
-      SELECT serviceRecordId
-      FROM serviceRecord
+    // UPDATE SERVICE RECORDS
+    await connection.execute(`
+      DELETE FROM serviceRecord
       WHERE jobOrderId = ?
-      LIMIT 1
     `, [jobOrderId]);
 
-    if (serviceRecord) {
-      if (serviceRecords.length > 0) {
-        await connection.execute(`
-          UPDATE serviceRecord
-          SET serviceType = ?, serviceDescription = ?, laborCharge = ?
-          WHERE jobOrderId = ?
-        `, [
-          serviceRecord.serviceType,
-          serviceRecord.serviceDescription || null,
-          serviceRecord.laborCharge,
-          jobOrderId
-        ]);
-      }
-      else {
-        await connection.execute(`
-          INSERT INTO serviceRecord (
-            jobOrderId, serviceType, serviceDescription, laborCharge
-          )
-          VALUES (?, ?, ?, ?)
-        `, [
-          jobOrderId,
-          serviceRecord.serviceType,
-          serviceRecord.serviceDescription || null,
-          serviceRecord.laborCharge
-        ]);
-      }
-    }
-    else if (serviceRecords.length > 0) {
+    for (const service of serviceRecords) {
       await connection.execute(`
-        DELETE FROM serviceRecord
-        WHERE jobOrderId = ?
-      `, [jobOrderId]);
+        INSERT INTO serviceRecord (
+          jobOrderId,
+          serviceType,
+          serviceDescription,
+          laborCharge
+        )
+        VALUES (?, ?, ?, ?)
+      `, [
+        jobOrderId,
+        service.serviceType,
+        service.serviceDescription || null,
+        service.laborCharge
+      ]);
+    }
+
+    // GET EXISTING JOB ORDER ITEMS
+    const [existingItems] = await connection.execute(`
+      SELECT inventoryItemId, quantityUsed
+      FROM jobOrderItem
+      WHERE jobOrderId = ?
+    `, [jobOrderId]);
+
+    // CALCULATE OLD AND NEW QUANTITIES
+    const oldQuantities = new Map();
+    const newQuantities = new Map();
+
+    for (const item of existingItems) {
+      const id = item.inventoryItemId;
+      oldQuantities.set(id, (oldQuantities.get(id) || 0) + item.quantityUsed);
+    }
+
+    for (const item of jobOrderItems) {
+      const id = item.inventoryItemId;
+      newQuantities.set(id, (newQuantities.get(id) || 0) + item.quantityUsed);
+    }
+
+    // ADJUST INVENTORY STOCK
+    const inventoryItemIds = new Set([
+      ...oldQuantities.keys(),
+      ...newQuantities.keys()
+    ]);
+
+    for (const inventoryItemId of inventoryItemIds) {
+      const oldQuantity = oldQuantities.get(inventoryItemId) || 0;
+      const newQuantity = newQuantities.get(inventoryItemId) || 0;
+      const difference = newQuantity - oldQuantity;
+
+      if (difference > 0) {
+        await deductInventoryStock(connection, inventoryItemId, difference);
+      }
+      else if (difference < 0) {
+        const quantityReturned = Math.abs(difference);
+
+        await connection.execute(`
+          UPDATE inventoryItem
+          SET quantity = quantity + ?
+          WHERE inventoryItemId = ?
+        `, [quantityReturned, inventoryItemId]);
+
+        await createStockTransaction(
+          connection,
+          quantityReturned,
+          "Stock In",
+          { inventoryItemId }
+        );
+      }
     }
 
     // UPDATE JOB ORDER ITEMS

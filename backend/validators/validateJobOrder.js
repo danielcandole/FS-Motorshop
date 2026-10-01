@@ -13,7 +13,7 @@ export function validateJobOrderInput(body) {
     };
   }
 
-  const {customerName, customerContactNumber, motorcycleName, motorcycleModel, repairDate, description, repairStatus, serviceRecord, jobOrderItems } = body;
+  const {customerName, customerContactNumber, motorcycleName, motorcycleModel, repairDate, description, repairStatus, serviceRecords, jobOrderItems } = body;
 
   // CUSTOMER NAME
   if (!isNonEmptyString(customerName)) {
@@ -65,41 +65,59 @@ export function validateJobOrderInput(body) {
     errors.push("Invalid repair status.");
   }
 
-  // SERVICE RECORD
-  let validatedServiceRecord = null;
+  // SERVICE RECORDS
+  const validatedServiceRecords = [];
 
-  if (!serviceRecord || typeof serviceRecord !== "object" || Array.isArray(serviceRecord)) {
-    errors.push("Service record must be an object.");
-  } 
+  if (!Array.isArray(serviceRecords) || serviceRecords.length === 0) {
+    errors.push("At least one service record is required.");
+  }
   else {
-    const {serviceType,  serviceDescription, laborCharge} = serviceRecord;
+    serviceRecords.forEach((service, index) => {
+      const serviceNumber = index + 1;
 
-    // SERVICE TYPE
-    if (!isNonEmptyString(serviceType)) {
-      errors.push("Service type is required.");
-    } 
-    else if (!isStringWithinLength(serviceType, 100)) {
-      errors.push("Service type must not exceed 100 characters.");
-    }
+      if (!service || typeof service !== "object" || Array.isArray(service)) {
+        errors.push(`Service ${serviceNumber} must be an object.`);
+        return;
+      }
 
-    // SERVICE DESCRIPTION
-    if (!isOptionalString(serviceDescription)) {
-      errors.push("Service description must be a string or null.");
-    } 
-    else if (typeof serviceDescription === "string" && !isStringWithinLength(serviceDescription, 1000)) {
-      errors.push("Service description must not exceed 1000 characters.");
-    }
+      const {serviceType, serviceDescription, laborCharge} = service;
 
-    // LABOR CHARGE
-    if (typeof laborCharge !== "number" || !Number.isFinite(laborCharge) || laborCharge < 0) {
-      errors.push("Labor charge must be a non-negative number.");
-    }
+      let isValidService = true;
 
-    validatedServiceRecord = {
-      serviceType: typeof serviceType === "string" ? serviceType.trim() : serviceType,
-      serviceDescription: typeof serviceDescription === "string" ? serviceDescription.trim() || null : serviceDescription,
-      laborCharge
-    };
+      // SERVICE TYPE
+      if (!isNonEmptyString(serviceType)) {
+        errors.push(`Service ${serviceNumber}: Service type is required.`);
+        isValidService = false;
+      }
+      else if (!isStringWithinLength(serviceType, 100)) {
+        errors.push(`Service ${serviceNumber}: Service type must not exceed 100 characters.`);
+        isValidService = false;
+      }
+
+      // SERVICE DESCRIPTION
+      if (!isOptionalString(serviceDescription)) {
+        errors.push(`Service ${serviceNumber}: Service description must be a string or null.`);
+        isValidService = false;
+      }
+      else if (typeof serviceDescription === "string" && !isStringWithinLength(serviceDescription, 1000)) {
+        errors.push(`Service ${serviceNumber}: Service description must not exceed 1000 characters.`);
+        isValidService = false;
+      }
+
+      // LABOR CHARGE
+      if (typeof laborCharge !== "number" || !Number.isFinite(laborCharge) || laborCharge < 0) {
+        errors.push(`Service ${serviceNumber}: Labor charge must be a non-negative number.`);
+        isValidService = false;
+      }
+
+      if (isValidService) {
+        validatedServiceRecords.push({
+          serviceType: serviceType.trim(),
+          serviceDescription: typeof serviceDescription === "string" ? serviceDescription.trim() || null : serviceDescription,
+          laborCharge
+        });
+      }
+    });
   }
 
   // JOB ORDER ITEMS
@@ -164,7 +182,7 @@ export function validateJobOrderInput(body) {
       repairDate,
       description: description?.trim() || null,
       repairStatus,
-      serviceRecord: validatedServiceRecord,
+      serviceRecords: validatedServiceRecords,
       jobOrderItems: validatedJobOrderItems
     },
     errors: []

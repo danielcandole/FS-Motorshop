@@ -4,16 +4,27 @@ import { authorized } from "../middleware/authorizationMiddleware.js";
 import { readJobOrderBillingData, createBillingData, readBillingData, updateBillingData, deleteBillingData } from "../services/billingService.js"; 
 import { sendJson } from "../../frontend/js/utils/jsonUtils.js";
 
-
-
-
 export async function handleCreateBillingData(request, response) {
-  
+  console.log("requested body: ",request.body);
 }
 
 export async function handleReadBillingData(request, response) {
   
 }
+// passed inputs:
+// partsTotal
+// laborTotal
+// otherCharges
+// discount
+// totalAmount
+
+// paymentDate
+// paymentAmount
+// paymentBalance
+
+// receiptNumber
+// receiptDate
+// receiptFile
 export async function handleReadJobOrderBillingData(request, response) {
 
   const validation = validateJobOrderId(request.jobOrderId);

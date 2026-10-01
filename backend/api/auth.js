@@ -175,9 +175,7 @@ export async function handleAuthRoute(request, response, body) {
   }
 
   // JOB ORDER BILLING
-  const jobOrderBillingMatch = pathname.match(
-    /^\/api\/job-orders\/(\d+)\/billing$/
-  );
+  const jobOrderBillingMatch = pathname.match(/^\/api\/job-orders\/(\d+)\/billing$/);
 
   if (jobOrderBillingMatch) {
     request.jobOrderId = Number(jobOrderBillingMatch[1]);
@@ -186,30 +184,32 @@ export async function handleAuthRoute(request, response, body) {
       await handleReadJobOrderBillingData(request, response);
       return true;
     }
-
-    if (request.method === "POST") {
-      request.body = body;
-      await handleReadBillingData(request, response);
-      return true;
-    }
-
-    if (request.method === "POST") {
-      request.body = body;
-      await handleCreateBillingData(request, response);
-      return true;
-    }
-
-    if (request.method === "PUT") {
-      request.body = body;
-      await handleUpdateBillingData(request, response);
-      return true;
-    }
-
-    if (request.method === "DELETE") {
-      await handleDeleteBillingData(request, response);
-      return true;
-    }
   }
+  // BILLING
+  
+  if (pathname === "/api/billing" && request.method === "POST") {
+    request.body = body;
+    await handleCreateBillingData(request, response);
+    return true;
+  }
+
+  // if (request.method === "POST") {
+  //   request.body = body;
+  //   await handleReadBillingData(request, response);
+  //   return true;
+  // }
+
+  // if (request.method === "PUT") {
+  //   request.body = body;
+  //   await handleUpdateBillingData(request, response);
+  //   return true;
+  // }
+
+  // if (request.method === "DELETE") {
+  //   await handleDeleteBillingData(request, response);
+  //   return true;
+  // }
+  
 
   return false;
 }

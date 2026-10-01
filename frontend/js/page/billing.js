@@ -48,23 +48,24 @@ async function createJobOrderBill(jobOrderId, dialog, setJobOrder) {
     setJobOrder(jobOrder);
 
     setBillingValue(
-      "billingJobOrderId",
+      "billingJobOrderId",  
       `JO-${String(jobOrder.jobOrderId).padStart(3, "0")}`
     );
     setBillingValue("billingCustomerName", jobOrder.customerName);
     setBillingValue("billingMotorcycleName", jobOrder.motorcycleName);
-
+    
     document.getElementById("partsTotal").value =
-      formatCurrency(jobOrder.partsTotal);
+      Number(jobOrder.partsTotal);
 
     document.getElementById("laborTotal").value =
-      formatCurrency(jobOrder.laborTotal);
+      Number(jobOrder.laborTotal);
 
     document.getElementById("otherCharges").value = 0;
     document.getElementById("discount").value = 0;
     document.getElementById("paymentAmount").value = "";
 
     setDefaultDate("paymentDate");
+    setDefaultDate("receiptDate");
 
     updateBillingTotals(jobOrder);
     dialog.showModal();
@@ -119,6 +120,10 @@ export function initBillingDialog() {
     billingDialog.close();
   });
 
+  billingForm.addEventListener("submit", (event) => {
+    savePayment(event, billingJobOrder);
+  });
+
   return {
     dialog: billingDialog,
     createBill: (jobOrderId) => {
@@ -127,4 +132,52 @@ export function initBillingDialog() {
       });
     }
   };
+}
+
+
+
+// SAVE PAYMENT
+async function savePayment(event, billingJobOrder) {
+  event.preventDefault();
+
+  const paymentData = {
+    jobOrderId: billingJobOrder.jobOrderId,
+    partsTotal: Number(document.getElementById("partsTotal").value),
+    laborTotal: Number(document.getElementById("laborTotal").value),
+    otherCharges: Number(document.getElementById("otherCharges").value) || null,
+    discount: Number(document.getElementById("discount").value) || null,
+    totalAmount: Number(
+      document.getElementById("totalAmount").textContent.replace(/[₱,]/g, "")
+    ),
+    paymentDate: document.getElementById("paymentDate").value,
+    paymentAmount: Number(document.getElementById("paymentAmount").value),
+    paymentBalance: Number(
+      document.getElementById("remainingBalance").textContent.replace(/[₱,]/g, "")
+    ),
+    receiptDate: new Date().toISOString()
+  };
+
+  try {
+    const response = await fetch("/api/billing", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      credentials: "same-origin",
+      body: JSON.stringify(paymentData)
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || "Failed to save payment.");
+    }
+
+    billingJobOrder = null;
+    document.getElementById("billingDialog").close();
+    alert("Payment saved successfully.");
+  } catch (error) {
+    console.error("Save Payment:", error);
+    alert(error.message);
+  }
 }

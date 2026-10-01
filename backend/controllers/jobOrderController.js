@@ -5,7 +5,7 @@ import { createJobOrderData, readJobOrderData, updateJobOrderData, deleteJobOrde
 import { sendJson } from "../../frontend/js/utils/jsonUtils.js";
 
 export async function handleCreateJobOrder(request, response) {
-  console.log("requested body: ",request.body);
+
   const validation = validateJobOrderInput(request.body);
   if (!validation.valid) {
     sendJson(response, 400, {

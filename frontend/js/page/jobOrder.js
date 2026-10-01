@@ -1,6 +1,7 @@
-  import { setDefaultDate, dateFormat, toDateTimeLocalValue } from "../utils/dateUtils.js";
-  import { initBillingDialog } from "./billing.js";
-  // LOAD JOB ORDERS
+import { setDefaultDate, dateFormat, toDateTimeLocalValue } from "../utils/dateUtils.js";
+import { initBillingDialog } from "./billing.js";
+
+// LOAD JOB ORDERS
 async function loadJobOrders(inventoryItems = [], billing = null) {
   const jobOrdersList = document.getElementById("jobOrdersTableBody");
 
@@ -24,66 +25,16 @@ async function loadJobOrders(inventoryItems = [], billing = null) {
     }
 
     const jobOrders = result.data;
-    console.log("JOB ORDER DATA: ", jobOrders);
+    console.log("JOB ORDER DATA:", jobOrders);
+
     if (!Array.isArray(jobOrders) || jobOrders.length === 0) {
       jobOrdersList.textContent = "No job orders available.";
       return;
     }
 
-    // GROUP JOB ORDERS AND THEIR ITEMS
-    const groupedJobOrders = new Map();
-
-    jobOrders.forEach((row) => {
-      let jobOrder = groupedJobOrders.get(row.jobOrderId);
-
-      if (!jobOrder) {
-        jobOrder = {
-          jobOrderId: row.jobOrderId,
-          customerRecordId: row.customerRecordId,
-          customerName: row.customerName,
-          contactNo: row.contactNo,
-          motorcycleRecordId: row.motorcycleRecordId,
-          motorcycleName: row.motorcycleName,
-          motorcycleModel: row.motorcycleModel,
-          repairDate: row.repairDate,
-          description: row.description,
-          repairStatus: row.repairStatus,
-          serviceBillId: row.serviceBillId ?? null,
-          serviceRecords: [],
-          jobOrderItems: []
-        };
-
-        groupedJobOrders.set(row.jobOrderId, jobOrder);
-      }
-
-      const isDuplicate = jobOrder.serviceRecords.some((service) => service.serviceRecordId === row.serviceRecordId);
-
-      if (row.serviceRecordId && !isDuplicate) {
-        jobOrder.serviceRecords.push({
-          serviceRecordId: row.serviceRecordId,
-          serviceType: row.serviceType,
-          serviceDescription: row.serviceDescription,
-          laborCharge: row.laborCharge
-        });
-      }
-
-      // JOB ORDER ITEMS
-      const isDuplicateItem = jobOrder.jobOrderItems.some((item) => item.jobOrderItemId === row.jobOrderItemId);
-
-      if (row.jobOrderItemId && !isDuplicateItem) {
-        jobOrder.jobOrderItems.push({
-          jobOrderItemId: row.jobOrderItemId,
-          inventoryItemId: row.inventoryItemId,
-          itemName: row.itemName,
-          quantityUsed: row.quantityUsed,
-          unitPrice: row.unitPrice
-        });
-      }
-    });
-
     jobOrdersList.replaceChildren();
 
-    groupedJobOrders.forEach((jobOrder) => {
+    jobOrders.forEach((jobOrder) => {
       const card = document.createElement("article");
       card.classList.add("jobOrderCard");
 
@@ -119,11 +70,11 @@ async function loadJobOrders(inventoryItems = [], billing = null) {
       billButton.type = "button";
       billButton.classList.add("billButton");
       billButton.textContent = jobOrder.serviceBillId ? "See Bill" : "Create Bill";
-      
+
       billButton.addEventListener("click", () => {
         billing.openBill(jobOrder.jobOrderId);
       });
-      
+
       actions.append(billButton, editButton, deleteButton);
       header.append(title, actions);
 
@@ -178,8 +129,11 @@ async function loadJobOrders(inventoryItems = [], billing = null) {
       serviceHead.appendChild(serviceHeadRow);
 
       const serviceBody = document.createElement("tbody");
+      const serviceRecords = Array.isArray(jobOrder.serviceRecords)
+        ? jobOrder.serviceRecords
+        : [];
 
-      if (jobOrder.serviceRecords.length === 0) {
+      if (serviceRecords.length === 0) {
         const row = document.createElement("tr");
         const cell = document.createElement("td");
 
@@ -189,7 +143,7 @@ async function loadJobOrders(inventoryItems = [], billing = null) {
         row.appendChild(cell);
         serviceBody.appendChild(row);
       } else {
-        jobOrder.serviceRecords.forEach((service) => {
+        serviceRecords.forEach((service) => {
           const row = document.createElement("tr");
 
           [
@@ -232,8 +186,11 @@ async function loadJobOrders(inventoryItems = [], billing = null) {
       itemsHead.appendChild(itemsHeadRow);
 
       const itemsBody = document.createElement("tbody");
+      const jobOrderItems = Array.isArray(jobOrder.jobOrderItems)
+        ? jobOrder.jobOrderItems
+        : [];
 
-      if (jobOrder.jobOrderItems.length === 0) {
+      if (jobOrderItems.length === 0) {
         const row = document.createElement("tr");
         const cell = document.createElement("td");
 
@@ -243,7 +200,7 @@ async function loadJobOrders(inventoryItems = [], billing = null) {
         row.appendChild(cell);
         itemsBody.appendChild(row);
       } else {
-        jobOrder.jobOrderItems.forEach((item) => {
+        jobOrderItems.forEach((item) => {
           const row = document.createElement("tr");
 
           [

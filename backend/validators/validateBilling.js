@@ -80,11 +80,11 @@ export function validateBillingInput(body) {
   }
 
   if (errors.length > 0) {
-    return { isValid: false, errors };
+    return { valid: false, errors };
   }
 
   return {
-    isValid: true,
+    valid: true,
     data: {
       jobOrderId,
       partsTotal,

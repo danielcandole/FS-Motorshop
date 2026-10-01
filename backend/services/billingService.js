@@ -122,8 +122,104 @@ const returnDataTesting =
 }
 
 
+// CREATE BILLING DATA
 export async function createBillingData(request) {
+  const {
+    jobOrderId,
+    partsTotal,
+    laborTotal,
+    otherCharges,
+    discount,
+    totalAmount,
+    paymentDate,
+    paymentAmount,
+    paymentBalance,
+    receiptDate
+  } = request.validatedBilling;
 
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    // 1. CREATE SERVICE BILL
+    const [serviceBillResult] = await connection.execute(
+      `INSERT INTO serviceBill (
+        jobOrderId,
+        partsTotal,
+        laborTotal,
+        otherCharges,
+        discount,
+        totalAmount
+      ) VALUES (?, ?, ?, ?, ?, ?)`,
+      [jobOrderId, partsTotal, laborTotal, otherCharges, discount, totalAmount]
+    );
+
+    const serviceBillId = serviceBillResult.insertId;
+
+    // 2. CREATE PAYMENT RECORD
+    const [paymentResult] = await connection.execute(
+      `INSERT INTO paymentRecord (
+        serviceBillId,
+        paymentDate,
+        paymentAmount,
+        paymentBalance
+      ) VALUES (?, ?, ?, ?)`,
+      [
+        serviceBillId,
+        `${paymentDate.replace("T", " ")}:00`,
+        paymentAmount,
+        paymentBalance
+      ]
+    );
+
+    const paymentRecordId = paymentResult.insertId;
+
+    // 3. CREATE RECEIPT
+    const formattedReceiptDate = new Date(receiptDate)
+      .toISOString()
+      .slice(0, 19)
+      .replace("T", " ");
+
+    const [receiptResult] = await connection.execute(
+      `INSERT INTO receipt (
+        paymentRecordId,
+        receiptNumber,
+        receiptDate,
+        receiptFile
+      ) VALUES (?, ?, ?, ?)`,
+      [paymentRecordId, "", formattedReceiptDate, null]
+    );
+
+    const paymentReceiptId = receiptResult.insertId;
+
+    // 4. GENERATE RECEIPT NUMBER
+    const receiptDateTime = new Date(receiptDate).toISOString().slice(0, 16).replace(/[-:T]/g, "");
+    const receiptNumber = `${receiptDateTime.slice(0, 8)}-${receiptDateTime.slice(8)}-${paymentReceiptId}`;
+
+    await connection.execute(
+      `UPDATE receipt
+       SET receiptNumber = ?
+       WHERE paymentReceiptId = ?`,
+      [receiptNumber, paymentReceiptId]
+    );
+
+    await connection.commit();
+
+    return {
+      serviceBillId,
+      paymentRecordId,
+      paymentReceiptId,
+      receiptNumber
+    };
+  }
+  catch (error) {
+    await connection.rollback();
+    throw error;
+  }
+  finally {
+    connection.release();
+  }
 }
 
 export async function readBillingData(request) {

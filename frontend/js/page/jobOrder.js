@@ -1,18 +1,288 @@
-import { setDefaultDate, dateFormat, toDateTimeLocalValue } from "../utils/dateUtils.js";
-import { initBillingDialog } from "./billing.js";
-// LOAD JOB ORDERS
-async function loadJobOrders(inventoryItems = [], billing = null) {
-  const jobOrdersList = document.getElementById("jobOrdersTableBody");
+  import { setDefaultDate, dateFormat, toDateTimeLocalValue } from "../utils/dateUtils.js";
+  import { initBillingDialog } from "./billing.js";
+  // LOAD JOB ORDERS
+  async function loadJobOrders(inventoryItems = [], billing = null) {
+    const jobOrdersList = document.getElementById("jobOrdersTableBody");
 
-  if (!jobOrdersList) {
-    console.error("Job Orders: List container was not found.");
-    return;
+    if (!jobOrdersList) {
+      console.error("Job Orders: List container was not found.");
+      return;
+    }
+
+    jobOrdersList.textContent = "Loading job orders...";
+
+    try {
+      const response = await fetch("/api/job-orders", {
+        method: "GET",
+        credentials: "same-origin"
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to load job orders.");
+      }
+
+      const jobOrders = result.data;
+      console.log("JOB ORDER DATA: ", jobOrders);
+      if (!Array.isArray(jobOrders) || jobOrders.length === 0) {
+        jobOrdersList.textContent = "No job orders available.";
+        return;
+      }
+
+      // GROUP JOB ORDERS AND THEIR ITEMS
+      const groupedJobOrders = new Map();
+
+      jobOrders.forEach((row) => {
+        let jobOrder = groupedJobOrders.get(row.jobOrderId);
+
+        if (!jobOrder) {
+          jobOrder = {
+            jobOrderId: row.jobOrderId,
+            customerRecordId: row.customerRecordId,
+            customerName: row.customerName,
+            contactNo: row.contactNo,
+            motorcycleRecordId: row.motorcycleRecordId,
+            motorcycleName: row.motorcycleName,
+            motorcycleModel: row.motorcycleModel,
+            repairDate: row.repairDate,
+            description: row.description,
+            repairStatus: row.repairStatus,
+            serviceBill: row.serviceBill ?? null,
+            serviceRecords: [],
+            jobOrderItems: []
+          };
+
+          groupedJobOrders.set(row.jobOrderId, jobOrder);
+        }
+
+        const isDuplicate = jobOrder.serviceRecords.some((service) => service.serviceRecordId === row.serviceRecordId);
+
+        if (row.serviceRecordId && !isDuplicate) {
+          jobOrder.serviceRecords.push({
+            serviceRecordId: row.serviceRecordId,
+            serviceType: row.serviceType,
+            serviceDescription: row.serviceDescription,
+            laborCharge: row.laborCharge
+          });
+        }
+
+        // JOB ORDER ITEMS
+        const isDuplicateItem = jobOrder.jobOrderItems.some((item) => item.jobOrderItemId === row.jobOrderItemId);
+
+        if (row.jobOrderItemId && !isDuplicateItem) {
+          jobOrder.jobOrderItems.push({
+            jobOrderItemId: row.jobOrderItemId,
+            inventoryItemId: row.inventoryItemId,
+            itemName: row.itemName,
+            quantityUsed: row.quantityUsed,
+            unitPrice: row.unitPrice
+          });
+        }
+      });
+
+      jobOrdersList.replaceChildren();
+
+      groupedJobOrders.forEach((jobOrder) => {
+        const card = document.createElement("article");
+        card.classList.add("jobOrderCard");
+
+        // HEADER
+        const header = document.createElement("header");
+        header.classList.add("jobOrderCardHeader");
+
+        const title = document.createElement("h3");
+        title.textContent = `JOB ORDER #${String(jobOrder.jobOrderId).padStart(3, "0")}`;
+
+        const actions = document.createElement("div");
+        actions.classList.add("jobOrderCardActions");
+
+        const editButton = document.createElement("button");
+        editButton.type = "button";
+        editButton.classList.add("secondaryButton");
+        editButton.textContent = "Edit";
+
+        editButton.addEventListener("click", () => {
+          openEditJobOrder(jobOrder, inventoryItems);
+        });
+
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.classList.add("dangerButton");
+        deleteButton.textContent = "Delete";
+
+        deleteButton.addEventListener("click", () => {
+          deleteJobOrder(jobOrder.jobOrderId, inventoryItems);
+        });
+
+        const billButton = document.createElement("button");
+        billButton.type = "button";
+        billButton.classList.add("billButton");
+        billButton.textContent = jobOrder.serviceBill ? "See Bill" : "Create Bill";
+
+        billButton.addEventListener("click", () => {
+          billing.openBill(jobOrder.jobOrderId);
+        });
+        
+        actions.append(billButton, editButton, deleteButton);
+        header.append(title, actions);
+
+        // JOB ORDER INFORMATION
+        const information = document.createElement("section");
+        information.classList.add("jobOrderInformation");
+
+        const details = [
+          ["Customer:", jobOrder.customerName],
+          ["Motorcycle:", jobOrder.motorcycleName],
+          ["Contact Number:", jobOrder.contactNo],
+          ["Model:", jobOrder.motorcycleModel],
+          ["Repair Date:", dateFormat(jobOrder.repairDate)],
+          ["Status:", jobOrder.repairStatus],
+          ["Reported Problem:", jobOrder.description]
+        ];
+
+        details.forEach(([label, value]) => {
+          const detail = document.createElement("p");
+          detail.classList.add("jobOrderDetail");
+
+          const strong = document.createElement("strong");
+          strong.textContent = label;
+
+          const span = document.createElement("span");
+          span.textContent = value ?? "N/A";
+
+          detail.append(strong, document.createTextNode(" "), span);
+          information.appendChild(detail);
+        });
+
+        // SERVICE RECORD
+        const serviceSection = document.createElement("section");
+        serviceSection.classList.add("jobOrderService");
+
+        const serviceTitle = document.createElement("h4");
+        serviceTitle.textContent = "SERVICE RECORD";
+
+        const serviceTable = document.createElement("table");
+        serviceTable.classList.add("jobOrderDetailsTable");
+
+        const serviceHead = document.createElement("thead");
+        const serviceHeadRow = document.createElement("tr");
+
+        ["Service Type", "Description", "Labor Charge"].forEach((heading) => {
+          const th = document.createElement("th");
+          th.scope = "col";
+          th.textContent = heading;
+          serviceHeadRow.appendChild(th);
+        });
+
+        serviceHead.appendChild(serviceHeadRow);
+
+        const serviceBody = document.createElement("tbody");
+
+        if (jobOrder.serviceRecords.length === 0) {
+          const row = document.createElement("tr");
+          const cell = document.createElement("td");
+
+          cell.colSpan = 3;
+          cell.textContent = "No service record";
+
+          row.appendChild(cell);
+          serviceBody.appendChild(row);
+        } else {
+          jobOrder.serviceRecords.forEach((service) => {
+            const row = document.createElement("tr");
+
+            [
+              service.serviceType ?? "N/A",
+              service.serviceDescription ?? "N/A",
+              `₱${Number(service.laborCharge).toFixed(2)}`
+            ].forEach((value) => {
+              const td = document.createElement("td");
+              td.textContent = value;
+              row.appendChild(td);
+            });
+
+            serviceBody.appendChild(row);
+          });
+        }
+
+        serviceTable.append(serviceHead, serviceBody);
+        serviceSection.append(serviceTitle, serviceTable);
+
+        // JOB ORDER ITEMS
+        const itemsSection = document.createElement("section");
+        itemsSection.classList.add("jobOrderItems");
+
+        const itemsTitle = document.createElement("h4");
+        itemsTitle.textContent = "PARTS AND INVENTORY";
+
+        const itemsTable = document.createElement("table");
+        itemsTable.classList.add("jobOrderDetailsTable");
+
+        const itemsHead = document.createElement("thead");
+        const itemsHeadRow = document.createElement("tr");
+
+        ["Item", "Quantity Used", "Unit Price"].forEach((heading) => {
+          const th = document.createElement("th");
+          th.scope = "col";
+          th.textContent = heading;
+          itemsHeadRow.appendChild(th);
+        });
+
+        itemsHead.appendChild(itemsHeadRow);
+
+        const itemsBody = document.createElement("tbody");
+
+        if (jobOrder.jobOrderItems.length === 0) {
+          const row = document.createElement("tr");
+          const cell = document.createElement("td");
+
+          cell.colSpan = 3;
+          cell.textContent = "No parts used";
+
+          row.appendChild(cell);
+          itemsBody.appendChild(row);
+        } else {
+          jobOrder.jobOrderItems.forEach((item) => {
+            const row = document.createElement("tr");
+
+            [
+              item.itemName ?? "N/A",
+              item.quantityUsed ?? "N/A",
+              `₱${Number(item.unitPrice).toFixed(2)}`
+            ].forEach((value) => {
+              const td = document.createElement("td");
+              td.textContent = value;
+              row.appendChild(td);
+            });
+
+            itemsBody.appendChild(row);
+          });
+        }
+
+        itemsTable.append(itemsHead, itemsBody);
+        itemsSection.append(itemsTitle, itemsTable);
+
+        // APPEND CARD
+        card.append(
+          header,
+          information,
+          serviceSection,
+          itemsSection
+        );
+
+        jobOrdersList.appendChild(card);
+      });
+    }
+    catch (error) {
+      console.error("Load Job Orders:", error);
+      jobOrdersList.textContent = "Failed to load job orders.";
+    }
   }
 
-  jobOrdersList.textContent = "Loading job orders...";
-
-  try {
-    const response = await fetch("/api/job-orders", {
+  // LOAD INVENTORY ITEMS
+  async function loadInventoryItems() {
+    const response = await fetch("/api/inventory-items", {
       method: "GET",
       credentials: "same-origin"
     });
@@ -20,714 +290,445 @@ async function loadJobOrders(inventoryItems = [], billing = null) {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.message || "Failed to load job orders.");
+      throw new Error(
+        result.message || "Failed to load inventory items."
+      );
     }
 
-    const jobOrders = result.data;
-    console.log("JOB ORDER DATA: ", jobOrders);
-    if (!Array.isArray(jobOrders) || jobOrders.length === 0) {
-      jobOrdersList.textContent = "No job orders available.";
+    return result.data;
+  }
+
+  // GET SERVICES
+  function getServices(container) {
+    return Array.from(container.querySelectorAll(".serviceEntry")).map((entry) => ({
+      serviceType: entry.querySelector(".serviceType").value.trim(),
+      laborCharge: Number(entry.querySelector(".laborCharge").value),
+      serviceDescription: entry.querySelector(".serviceDescription").value.trim() || null
+    }));
+  }
+
+  // ADD SERVICE
+  function addService(container, template, service = null) {
+    const entry = template.content.firstElementChild.cloneNode(true);
+
+    const serviceType = entry.querySelector(".serviceType");
+    const laborCharge = entry.querySelector(".laborCharge");
+    const serviceDescription = entry.querySelector(".serviceDescription");
+    const removeButton = entry.querySelector(".removeServiceButton");
+
+    if (service) {
+      serviceType.value = service.serviceType ?? "";
+      laborCharge.value = service.laborCharge ?? "";
+      serviceDescription.value = service.serviceDescription ?? "";
+    }
+
+    removeButton.addEventListener("click", () => {
+      entry.remove();
+    });
+
+    container.appendChild(entry);
+  }
+
+  // ADD JOB ORDER ITEM
+  function addJobOrderItem(inventoryItems, container, template, item = null) {
+    if (!template || !container) {
+      console.error("Job Order Items: Required elements were not found.");
       return;
     }
 
-    // GROUP JOB ORDERS AND THEIR ITEMS
-    const groupedJobOrders = new Map();
+    const row = template.content.firstElementChild.cloneNode(true);
+    const inventorySelect = row.querySelector(".jobOrderItemInventory");
+    const quantityInput = row.querySelector(".jobOrderItemQuantity");
+    const unitPriceInput = row.querySelector(".jobOrderItemUnitPrice");
+    const removeButton = row.querySelector(".removeJobOrderItemButton");
 
-    jobOrders.forEach((row) => {
-      let jobOrder = groupedJobOrders.get(row.jobOrderId);
-
-      if (!jobOrder) {
-        jobOrder = {
-          jobOrderId: row.jobOrderId,
-          customerRecordId: row.customerRecordId,
-          customerName: row.customerName,
-          contactNo: row.contactNo,
-          motorcycleRecordId: row.motorcycleRecordId,
-          motorcycleName: row.motorcycleName,
-          motorcycleModel: row.motorcycleModel,
-          repairDate: row.repairDate,
-          description: row.description,
-          repairStatus: row.repairStatus,
-          serviceRecords: [],
-          jobOrderItems: []
-        };
-
-        groupedJobOrders.set(row.jobOrderId, jobOrder);
-      }
-
-      const isDuplicate = jobOrder.serviceRecords.some((service) => service.serviceRecordId === row.serviceRecordId);
-
-      if (row.serviceRecordId && !isDuplicate) {
-        jobOrder.serviceRecords.push({
-          serviceRecordId: row.serviceRecordId,
-          serviceType: row.serviceType,
-          serviceDescription: row.serviceDescription,
-          laborCharge: row.laborCharge
-        });
-      }
-
-      // JOB ORDER ITEMS
-      const isDuplicateItem = jobOrder.jobOrderItems.some((item) => item.jobOrderItemId === row.jobOrderItemId);
-
-      if (row.jobOrderItemId && !isDuplicateItem) {
-        jobOrder.jobOrderItems.push({
-          jobOrderItemId: row.jobOrderItemId,
-          inventoryItemId: row.inventoryItemId,
-          itemName: row.itemName,
-          quantityUsed: row.quantityUsed,
-          unitPrice: row.unitPrice
-        });
-      }
+    inventoryItems.forEach((inventoryItem) => {
+      const option = document.createElement("option");
+      option.value = inventoryItem.inventoryItemId;
+      option.textContent = inventoryItem.itemName;
+      option.dataset.sellingPrice = inventoryItem.sellingPrice;
+      inventorySelect.appendChild(option);
     });
 
-    jobOrdersList.replaceChildren();
-
-    groupedJobOrders.forEach((jobOrder) => {
-      const card = document.createElement("article");
-      card.classList.add("jobOrderCard");
-
-      // HEADER
-      const header = document.createElement("header");
-      header.classList.add("jobOrderCardHeader");
-
-      const title = document.createElement("h3");
-      title.textContent = `JOB ORDER #${String(jobOrder.jobOrderId).padStart(3, "0")}`;
-
-      const actions = document.createElement("div");
-      actions.classList.add("jobOrderCardActions");
-
-      const editButton = document.createElement("button");
-      editButton.type = "button";
-      editButton.classList.add("secondaryButton");
-      editButton.textContent = "Edit";
-
-      editButton.addEventListener("click", () => {
-        openEditJobOrder(jobOrder, inventoryItems);
-      });
-
-      const deleteButton = document.createElement("button");
-      deleteButton.type = "button";
-      deleteButton.classList.add("dangerButton");
-      deleteButton.textContent = "Delete";
-
-      deleteButton.addEventListener("click", () => {
-        deleteJobOrder(jobOrder.jobOrderId, inventoryItems);
-      });
-
-      const billButton = document.createElement("button");
-      billButton.type = "button";
-      billButton.classList.add("billButton");
-      billButton.textContent = "Create Bill";
-
-      billButton.addEventListener("click", () => {
-        billing.createBill(jobOrder.jobOrderId);
-      });
-      
-      actions.append(billButton, editButton, deleteButton);
-      header.append(title, actions);
-
-      // JOB ORDER INFORMATION
-      const information = document.createElement("section");
-      information.classList.add("jobOrderInformation");
-
-      const details = [
-        ["Customer:", jobOrder.customerName],
-        ["Motorcycle:", jobOrder.motorcycleName],
-        ["Contact Number:", jobOrder.contactNo],
-        ["Model:", jobOrder.motorcycleModel],
-        ["Repair Date:", dateFormat(jobOrder.repairDate)],
-        ["Status:", jobOrder.repairStatus],
-        ["Reported Problem:", jobOrder.description]
-      ];
-
-      details.forEach(([label, value]) => {
-        const detail = document.createElement("p");
-        detail.classList.add("jobOrderDetail");
-
-        const strong = document.createElement("strong");
-        strong.textContent = label;
-
-        const span = document.createElement("span");
-        span.textContent = value ?? "N/A";
-
-        detail.append(strong, document.createTextNode(" "), span);
-        information.appendChild(detail);
-      });
-
-      // SERVICE RECORD
-      const serviceSection = document.createElement("section");
-      serviceSection.classList.add("jobOrderService");
-
-      const serviceTitle = document.createElement("h4");
-      serviceTitle.textContent = "SERVICE RECORD";
-
-      const serviceTable = document.createElement("table");
-      serviceTable.classList.add("jobOrderDetailsTable");
-
-      const serviceHead = document.createElement("thead");
-      const serviceHeadRow = document.createElement("tr");
-
-      ["Service Type", "Description", "Labor Charge"].forEach((heading) => {
-        const th = document.createElement("th");
-        th.scope = "col";
-        th.textContent = heading;
-        serviceHeadRow.appendChild(th);
-      });
-
-      serviceHead.appendChild(serviceHeadRow);
-
-      const serviceBody = document.createElement("tbody");
-
-      if (jobOrder.serviceRecords.length === 0) {
-        const row = document.createElement("tr");
-        const cell = document.createElement("td");
-
-        cell.colSpan = 3;
-        cell.textContent = "No service record";
-
-        row.appendChild(cell);
-        serviceBody.appendChild(row);
-      } else {
-        jobOrder.serviceRecords.forEach((service) => {
-          const row = document.createElement("tr");
-
-          [
-            service.serviceType ?? "N/A",
-            service.serviceDescription ?? "N/A",
-            `₱${Number(service.laborCharge).toFixed(2)}`
-          ].forEach((value) => {
-            const td = document.createElement("td");
-            td.textContent = value;
-            row.appendChild(td);
-          });
-
-          serviceBody.appendChild(row);
-        });
-      }
-
-      serviceTable.append(serviceHead, serviceBody);
-      serviceSection.append(serviceTitle, serviceTable);
-
-      // JOB ORDER ITEMS
-      const itemsSection = document.createElement("section");
-      itemsSection.classList.add("jobOrderItems");
-
-      const itemsTitle = document.createElement("h4");
-      itemsTitle.textContent = "PARTS AND INVENTORY";
-
-      const itemsTable = document.createElement("table");
-      itemsTable.classList.add("jobOrderDetailsTable");
-
-      const itemsHead = document.createElement("thead");
-      const itemsHeadRow = document.createElement("tr");
-
-      ["Item", "Quantity Used", "Unit Price"].forEach((heading) => {
-        const th = document.createElement("th");
-        th.scope = "col";
-        th.textContent = heading;
-        itemsHeadRow.appendChild(th);
-      });
-
-      itemsHead.appendChild(itemsHeadRow);
-
-      const itemsBody = document.createElement("tbody");
-
-      if (jobOrder.jobOrderItems.length === 0) {
-        const row = document.createElement("tr");
-        const cell = document.createElement("td");
-
-        cell.colSpan = 3;
-        cell.textContent = "No parts used";
-
-        row.appendChild(cell);
-        itemsBody.appendChild(row);
-      } else {
-        jobOrder.jobOrderItems.forEach((item) => {
-          const row = document.createElement("tr");
-
-          [
-            item.itemName ?? "N/A",
-            item.quantityUsed ?? "N/A",
-            `₱${Number(item.unitPrice).toFixed(2)}`
-          ].forEach((value) => {
-            const td = document.createElement("td");
-            td.textContent = value;
-            row.appendChild(td);
-          });
-
-          itemsBody.appendChild(row);
-        });
-      }
-
-      itemsTable.append(itemsHead, itemsBody);
-      itemsSection.append(itemsTitle, itemsTable);
-
-      // APPEND CARD
-      card.append(
-        header,
-        information,
-        serviceSection,
-        itemsSection
+    if (item) {
+      const selectedItem = inventoryItems.find(
+        (inventoryItem) =>
+          Number(inventoryItem.inventoryItemId) === Number(item.inventoryItemId)
       );
 
-      jobOrdersList.appendChild(card);
-    });
-  }
-  catch (error) {
-    console.error("Load Job Orders:", error);
-    jobOrdersList.textContent = "Failed to load job orders.";
-  }
-}
+      if (selectedItem) {
+        inventorySelect.value = String(selectedItem.inventoryItemId);
+      }
+      else {
+        console.warn("Inventory item not found:", item.inventoryItemId);
+      }
 
-// LOAD INVENTORY ITEMS
-async function loadInventoryItems() {
-  const response = await fetch("/api/inventory-items", {
-    method: "GET",
-    credentials: "same-origin"
-  });
-
-  const result = await response.json();
-
-  if (!response.ok) {
-    throw new Error(
-      result.message || "Failed to load inventory items."
-    );
-  }
-
-  return result.data;
-}
-
-// GET SERVICES
-function getServices(container) {
-  return Array.from(container.querySelectorAll(".serviceEntry")).map((entry) => ({
-    serviceType: entry.querySelector(".serviceType").value.trim(),
-    laborCharge: Number(entry.querySelector(".laborCharge").value),
-    serviceDescription: entry.querySelector(".serviceDescription").value.trim() || null
-  }));
-}
-
-// ADD SERVICE
-function addService(container, template, service = null) {
-  const entry = template.content.firstElementChild.cloneNode(true);
-
-  const serviceType = entry.querySelector(".serviceType");
-  const laborCharge = entry.querySelector(".laborCharge");
-  const serviceDescription = entry.querySelector(".serviceDescription");
-  const removeButton = entry.querySelector(".removeServiceButton");
-
-  if (service) {
-    serviceType.value = service.serviceType ?? "";
-    laborCharge.value = service.laborCharge ?? "";
-    serviceDescription.value = service.serviceDescription ?? "";
-  }
-
-  removeButton.addEventListener("click", () => {
-    entry.remove();
-  });
-
-  container.appendChild(entry);
-}
-
-// ADD JOB ORDER ITEM
-function addJobOrderItem(inventoryItems, container, template, item = null) {
-  if (!template || !container) {
-    console.error("Job Order Items: Required elements were not found.");
-    return;
-  }
-
-  const row = template.content.firstElementChild.cloneNode(true);
-  const inventorySelect = row.querySelector(".jobOrderItemInventory");
-  const quantityInput = row.querySelector(".jobOrderItemQuantity");
-  const unitPriceInput = row.querySelector(".jobOrderItemUnitPrice");
-  const removeButton = row.querySelector(".removeJobOrderItemButton");
-
-  inventoryItems.forEach((inventoryItem) => {
-    const option = document.createElement("option");
-    option.value = inventoryItem.inventoryItemId;
-    option.textContent = inventoryItem.itemName;
-    option.dataset.sellingPrice = inventoryItem.sellingPrice;
-    inventorySelect.appendChild(option);
-  });
-
-  if (item) {
-    const selectedItem = inventoryItems.find(
-      (inventoryItem) =>
-        Number(inventoryItem.inventoryItemId) === Number(item.inventoryItemId)
-    );
-
-    if (selectedItem) {
-      inventorySelect.value = String(selectedItem.inventoryItemId);
-    }
-    else {
-      console.warn("Inventory item not found:", item.inventoryItemId);
+      quantityInput.value = item.quantityUsed ?? 1;
+      unitPriceInput.value = item.unitPrice ?? "";
     }
 
-    quantityInput.value = item.quantityUsed ?? 1;
-    unitPriceInput.value = item.unitPrice ?? "";
-  }
-
-  inventorySelect.addEventListener("change", () => {
-    const selectedOption = inventorySelect.selectedOptions[0];
-    unitPriceInput.value = selectedOption.dataset.sellingPrice ?? "";
-  });
-
-  removeButton.addEventListener("click", () => {
-    row.remove();
-  });
-
-  container.appendChild(row);
-}
-
-// GET JOB ORDER ITEMS
-function getJobOrderItems(container) {
-  const rows = container.querySelectorAll(".jobOrderItemRow");
-
-  return Array.from(rows).map((row) => ({
-    inventoryItemId: Number(row.querySelector(".jobOrderItemInventory").value),
-    quantityUsed: Number(row.querySelector(".jobOrderItemQuantity").value),
-    unitPrice: Number(row.querySelector(".jobOrderItemUnitPrice").value)
-  }));
-}
-
-
-// OPEN EDIT DIALOG
-function openEditJobOrder(jobOrder, inventoryItems) {
-  const servicesContainer = document.getElementById("editServicesContainer");
-  const serviceTemplate = document.getElementById("editServiceTemplate");
-  const modal = document.getElementById("editJobOrderModal");
-  const template = document.getElementById("editJobOrderItemTemplate");
-  const container = document.getElementById("editJobOrderItemsTableBody");
-
-  const jobOrderId = document.getElementById("editJobOrderId");
-  const customerName = document.getElementById("editCustomerName");
-  const customerContactNumber = document.getElementById("editCustomerContactNumber");
-  const motorcycleName = document.getElementById("editMotorcycleName");
-  const motorcycleModel = document.getElementById("editMotorcycleModel");
-  const repairDate = document.getElementById("editRepairDate");
-  const description = document.getElementById("editDescription");
-  const repairStatus = document.getElementById("editRepairStatus");
-
-  if (
-    !servicesContainer ||
-    !serviceTemplate ||
-    !modal ||
-    !template ||
-    !container ||
-    !jobOrderId ||
-    !customerName ||
-    !customerContactNumber ||
-    !motorcycleName ||
-    !motorcycleModel ||
-    !repairDate ||
-    !description ||
-    !repairStatus
-  ) {
-    console.error("Edit Job Order: One or more required elements were not found.");
-    return;
-  }
-
-  jobOrderId.value = jobOrder.jobOrderId;
-  customerName.value = jobOrder.customerName ?? "";
-  customerContactNumber.value = jobOrder.contactNo ?? "";
-  motorcycleName.value = jobOrder.motorcycleName ?? "";
-  motorcycleModel.value = jobOrder.motorcycleModel ?? "";
-  repairDate.value = toDateTimeLocalValue(jobOrder.repairDate);
-  description.value = jobOrder.description ?? "";
-  repairStatus.value = jobOrder.repairStatus ?? "pending";
-
-  servicesContainer.replaceChildren();
-
-  if (Array.isArray(jobOrder.serviceRecords) && jobOrder.serviceRecords.length > 0) {
-    jobOrder.serviceRecords.forEach((service) => {
-      addService(servicesContainer, serviceTemplate, service);
+    inventorySelect.addEventListener("change", () => {
+      const selectedOption = inventorySelect.selectedOptions[0];
+      unitPriceInput.value = selectedOption.dataset.sellingPrice ?? "";
     });
-  } else {
-    addService(servicesContainer, serviceTemplate);
-  }
 
-  container.replaceChildren();
-
-  if (Array.isArray(jobOrder.jobOrderItems) && jobOrder.jobOrderItems.length > 0) {
-    jobOrder.jobOrderItems.forEach((item) => {
-      addJobOrderItem(inventoryItems, container, template, item);
+    removeButton.addEventListener("click", () => {
+      row.remove();
     });
-  } else if (inventoryItems.length > 0) {
-    addJobOrderItem(inventoryItems, container, template);
+
+    container.appendChild(row);
   }
 
-  if (!modal.open) {
-    modal.showModal();
-  }
-}
+  // GET JOB ORDER ITEMS
+  function getJobOrderItems(container) {
+    const rows = container.querySelectorAll(".jobOrderItemRow");
 
-// INITIALIZE JOB ORDERS PAGE
-export async function initJobOrdersPage() {
-  const createButton = document.getElementById("createJobOrderButton");
-  const modal = document.getElementById("jobOrderModal");
-  const closeButton = document.getElementById("closeJobOrderModal");
-  const cancelButton = document.getElementById("cancelJobOrderButton");
-  const form = document.getElementById("jobOrderForm");
-
-  const editModal = document.getElementById("editJobOrderModal");
-  const editForm = document.getElementById("editJobOrderForm");
-  const closeEditButton = document.getElementById("closeEditJobOrderModal");
-  const cancelEditButton = document.getElementById("cancelEditJobOrderButton");
-
-  const addItemButton = document.getElementById("addJobOrderItemButton");
-  const itemsContainer = document.getElementById("jobOrderItemsTableBody");
-
-  const itemTemplate = document.getElementById("jobOrderItemTemplate");
-  const addEditItemButton = document.getElementById("addEditJobOrderItemButton");
-  const editItemsContainer = document.getElementById("editJobOrderItemsTableBody");
-  const editItemTemplate = document.getElementById("editJobOrderItemTemplate");
-
-
-  const servicesContainer = document.getElementById("servicesContainer");
-  const serviceTemplate = document.getElementById("serviceTemplate");
-  const addServiceButton = document.getElementById("addServiceButton");
-
-  const editServicesContainer = document.getElementById("editServicesContainer");
-  const editServiceTemplate = document.getElementById("editServiceTemplate");
-  const addEditServiceButton = document.getElementById("addEditServiceButton");
-  
-  if (
-    !createButton ||
-    !modal ||
-    !closeButton ||
-    !cancelButton ||
-    !form ||
-    !editModal ||
-    !editForm ||
-    !closeEditButton ||
-    !cancelEditButton ||
-    !addItemButton ||
-    !itemsContainer ||
-    !addEditItemButton ||
-    !editItemsContainer ||
-    !editItemTemplate ||
-    !servicesContainer ||
-    !serviceTemplate ||
-    !addServiceButton ||
-    !editServicesContainer ||
-    !editServiceTemplate ||
-    !addEditServiceButton
-  ) {
-    console.error("Job Orders: One or more required HTML elements were not found.");
-    return;
-  }
-  const billing = initBillingDialog();
-
-  if (!billing) {
-    return;
-  }
-  let inventoryItems = [];
-
-  try {
-    inventoryItems = await loadInventoryItems();
-  } catch (error) {
-    console.error("Load Inventory Items:", error);
+    return Array.from(rows).map((row) => ({
+      inventoryItemId: Number(row.querySelector(".jobOrderItemInventory").value),
+      quantityUsed: Number(row.querySelector(".jobOrderItemQuantity").value),
+      unitPrice: Number(row.querySelector(".jobOrderItemUnitPrice").value)
+    }));
   }
 
-  await loadJobOrders(inventoryItems, billing);
 
-  addServiceButton.addEventListener("click", () => {addService(servicesContainer, serviceTemplate);});
-  addEditServiceButton.addEventListener("click", () => {addService(editServicesContainer, editServiceTemplate);});
+  // OPEN EDIT DIALOG
+  function openEditJobOrder(jobOrder, inventoryItems) {
+    const servicesContainer = document.getElementById("editServicesContainer");
+    const serviceTemplate = document.getElementById("editServiceTemplate");
+    const modal = document.getElementById("editJobOrderModal");
+    const template = document.getElementById("editJobOrderItemTemplate");
+    const container = document.getElementById("editJobOrderItemsTableBody");
 
-  // Add the initial service
-  addService(servicesContainer, serviceTemplate);
+    const jobOrderId = document.getElementById("editJobOrderId");
+    const customerName = document.getElementById("editCustomerName");
+    const customerContactNumber = document.getElementById("editCustomerContactNumber");
+    const motorcycleName = document.getElementById("editMotorcycleName");
+    const motorcycleModel = document.getElementById("editMotorcycleModel");
+    const repairDate = document.getElementById("editRepairDate");
+    const description = document.getElementById("editDescription");
+    const repairStatus = document.getElementById("editRepairStatus");
 
+    if (
+      !servicesContainer ||
+      !serviceTemplate ||
+      !modal ||
+      !template ||
+      !container ||
+      !jobOrderId ||
+      !customerName ||
+      !customerContactNumber ||
+      !motorcycleName ||
+      !motorcycleModel ||
+      !repairDate ||
+      !description ||
+      !repairStatus
+    ) {
+      console.error("Edit Job Order: One or more required elements were not found.");
+      return;
+    }
 
-
-  // CREATE DIALOG
-  closeButton.addEventListener("click", () => {modal.close();});
-  cancelButton.addEventListener("click", () => { modal.close();});
-
-  createButton.addEventListener("click", () => {
-    setDefaultDate("repairDate");
+    jobOrderId.value = jobOrder.jobOrderId;
+    customerName.value = jobOrder.customerName ?? "";
+    customerContactNumber.value = jobOrder.contactNo ?? "";
+    motorcycleName.value = jobOrder.motorcycleName ?? "";
+    motorcycleModel.value = jobOrder.motorcycleModel ?? "";
+    repairDate.value = toDateTimeLocalValue(jobOrder.repairDate);
+    description.value = jobOrder.description ?? "";
+    repairStatus.value = jobOrder.repairStatus ?? "pending";
 
     servicesContainer.replaceChildren();
-    itemsContainer.replaceChildren();
 
-    if (inventoryItems.length > 0) {
-      addJobOrderItem(inventoryItems, itemsContainer, itemTemplate);
+    if (Array.isArray(jobOrder.serviceRecords) && jobOrder.serviceRecords.length > 0) {
+      jobOrder.serviceRecords.forEach((service) => {
+        addService(servicesContainer, serviceTemplate, service);
+      });
+    } else {
+      addService(servicesContainer, serviceTemplate);
     }
-    addService(servicesContainer, serviceTemplate);
+
+    container.replaceChildren();
+
+    if (Array.isArray(jobOrder.jobOrderItems) && jobOrder.jobOrderItems.length > 0) {
+      jobOrder.jobOrderItems.forEach((item) => {
+        addJobOrderItem(inventoryItems, container, template, item);
+      });
+    } else if (inventoryItems.length > 0) {
+      addJobOrderItem(inventoryItems, container, template);
+    }
+
+    if (!modal.open) {
+      modal.showModal();
+    }
+  }
+
+  // INITIALIZE JOB ORDERS PAGE
+  export async function initJobOrdersPage() {
+    const createButton = document.getElementById("createJobOrderButton");
+    const modal = document.getElementById("jobOrderModal");
+    const closeButton = document.getElementById("closeJobOrderModal");
+    const cancelButton = document.getElementById("cancelJobOrderButton");
+    const form = document.getElementById("jobOrderForm");
+
+    const editModal = document.getElementById("editJobOrderModal");
+    const editForm = document.getElementById("editJobOrderForm");
+    const closeEditButton = document.getElementById("closeEditJobOrderModal");
+    const cancelEditButton = document.getElementById("cancelEditJobOrderButton");
+
+    const addItemButton = document.getElementById("addJobOrderItemButton");
+    const itemsContainer = document.getElementById("jobOrderItemsTableBody");
+
+    const itemTemplate = document.getElementById("jobOrderItemTemplate");
+    const addEditItemButton = document.getElementById("addEditJobOrderItemButton");
+    const editItemsContainer = document.getElementById("editJobOrderItemsTableBody");
+    const editItemTemplate = document.getElementById("editJobOrderItemTemplate");
+
+
+    const servicesContainer = document.getElementById("servicesContainer");
+    const serviceTemplate = document.getElementById("serviceTemplate");
+    const addServiceButton = document.getElementById("addServiceButton");
+
+    const editServicesContainer = document.getElementById("editServicesContainer");
+    const editServiceTemplate = document.getElementById("editServiceTemplate");
+    const addEditServiceButton = document.getElementById("addEditServiceButton");
     
-    modal.showModal();
-  });
-
-  addItemButton.addEventListener("click", () => {
-    if (inventoryItems.length === 0) {
-      alert("No inventory items are available.");
+    if (
+      !createButton ||
+      !modal ||
+      !closeButton ||
+      !cancelButton ||
+      !form ||
+      !editModal ||
+      !editForm ||
+      !closeEditButton ||
+      !cancelEditButton ||
+      !addItemButton ||
+      !itemsContainer ||
+      !addEditItemButton ||
+      !editItemsContainer ||
+      !editItemTemplate ||
+      !servicesContainer ||
+      !serviceTemplate ||
+      !addServiceButton ||
+      !editServicesContainer ||
+      !editServiceTemplate ||
+      !addEditServiceButton
+    ) {
+      console.error("Job Orders: One or more required HTML elements were not found.");
       return;
     }
+    const billing = initBillingDialog();
 
-    addJobOrderItem(inventoryItems, itemsContainer, itemTemplate);
-  });
-
-  form.addEventListener("submit", (event) => {
-    createJobOrder(event, form, modal, itemsContainer, inventoryItems, servicesContainer);
-  });
-
-  // EDIT DIALOG
-  closeEditButton.addEventListener("click", () => {editModal.close(); });
-  cancelEditButton.addEventListener("click", () => {editModal.close();});
-  editForm.addEventListener("submit", (event) => {
-    updateJobOrder(event, editForm, editModal, inventoryItems, editServicesContainer);
-  });
-
-  addEditItemButton.addEventListener("click", () => {
-    if (inventoryItems.length === 0) {
-      alert("No inventory items are available.");
+    if (!billing) {
       return;
     }
+    let inventoryItems = [];
 
-    addJobOrderItem(inventoryItems, editItemsContainer, editItemTemplate);
-  });
-}
+    try {
+      inventoryItems = await loadInventoryItems();
+    } catch (error) {
+      console.error("Load Inventory Items:", error);
+    }
 
-// EVENT LISTENER HELPER FUNCTIONS- - - - - - - - - - - - - - - - - - - - - 
+    await loadJobOrders(inventoryItems, billing);
 
-// CREATE JOB ORDER
-async function createJobOrder(event, form, modal, itemsContainer, inventoryItems, servicesContainer) {
-  event.preventDefault();
+    addServiceButton.addEventListener("click", () => {addService(servicesContainer, serviceTemplate);});
+    addEditServiceButton.addEventListener("click", () => {addService(editServicesContainer, editServiceTemplate);});
 
-  const formData = new FormData(form);
+    // Add the initial service
+    addService(servicesContainer, serviceTemplate);
 
-  const jobOrderData = {
-    customerName: formData.get("customerName"),
-    customerContactNumber: formData.get("customerContactNumber"),
-    motorcycleName: formData.get("motorcycleName"),
-    motorcycleModel: formData.get("motorcycleModel") || null,
-    repairDate: formData.get("repairDate"),
-    description: formData.get("description") || null,
-    repairStatus: formData.get("repairStatus"),
-    serviceRecords: getServices(servicesContainer),
-    jobOrderItems: getJobOrderItems(itemsContainer)
-  };
-  try {
-    const response = await fetch("/api/job-orders", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      credentials: "same-origin",
-      body: JSON.stringify(jobOrderData)
+
+
+    // CREATE DIALOG
+    closeButton.addEventListener("click", () => {modal.close();});
+    cancelButton.addEventListener("click", () => { modal.close();});
+
+    createButton.addEventListener("click", () => {
+      setDefaultDate("repairDate");
+
+      servicesContainer.replaceChildren();
+      itemsContainer.replaceChildren();
+
+      if (inventoryItems.length > 0) {
+        addJobOrderItem(inventoryItems, itemsContainer, itemTemplate);
+      }
+      addService(servicesContainer, serviceTemplate);
+      
+      modal.showModal();
     });
 
-    const result = await response.json();
+    addItemButton.addEventListener("click", () => {
+      if (inventoryItems.length === 0) {
+        alert("No inventory items are available.");
+        return;
+      }
 
-    if (!response.ok) {
-      throw new Error(
-        result.message || "Failed to create job order."
-      );
-    }
+      addJobOrderItem(inventoryItems, itemsContainer, itemTemplate);
+    });
 
-    modal.close();
-    form.reset();
-    itemsContainer.replaceChildren();
+    form.addEventListener("submit", (event) => {
+      createJobOrder(event, form, modal, itemsContainer, inventoryItems, servicesContainer);
+    });
 
-    setDefaultDate("repairDate");
+    // EDIT DIALOG
+    closeEditButton.addEventListener("click", () => {editModal.close(); });
+    cancelEditButton.addEventListener("click", () => {editModal.close();});
+    editForm.addEventListener("submit", (event) => {
+      updateJobOrder(event, editForm, editModal, inventoryItems, editServicesContainer);
+    });
 
-    await loadJobOrders(inventoryItems);
+    addEditItemButton.addEventListener("click", () => {
+      if (inventoryItems.length === 0) {
+        alert("No inventory items are available.");
+        return;
+      }
 
-    alert("Job order created successfully.");
-  } catch (error) {
-    console.error("Create Job Order:", error);
-    alert(error.message);
+      addJobOrderItem(inventoryItems, editItemsContainer, editItemTemplate);
+    });
   }
-}
 
-// UPDATE JOB ORDER
-async function updateJobOrder(event, form, modal, inventoryItems, editServicesContainer) {
-  event.preventDefault();
+  // EVENT LISTENER HELPER FUNCTIONS- - - - - - - - - - - - - - - - - - - - - 
 
-  const formData = new FormData(form);
-  const jobOrderId = formData.get("jobOrderId");
-  const editItemsContainer = document.getElementById("editJobOrderItemsTableBody");
+  // CREATE JOB ORDER
+  async function createJobOrder(event, form, modal, itemsContainer, inventoryItems, servicesContainer) {
+    event.preventDefault();
 
-  const jobOrderData = {
-    customerName: formData.get("customerName"),
-    customerContactNumber: formData.get("customerContactNumber"),
-    motorcycleName: formData.get("motorcycleName"),
-    motorcycleModel: formData.get("motorcycleModel") || null,
-    repairDate: formData.get("repairDate"),
-    description: formData.get("description") || null,
-    repairStatus: formData.get("repairStatus"),
-    serviceRecords: getServices(editServicesContainer),
-    jobOrderItems: getJobOrderItems(editItemsContainer)
-  };
+    const formData = new FormData(form);
 
-  try {
-    const response = await fetch(
-      `/api/job-orders/${jobOrderId}`,
-      {
-        method: "PUT",
+    const jobOrderData = {
+      customerName: formData.get("customerName"),
+      customerContactNumber: formData.get("customerContactNumber"),
+      motorcycleName: formData.get("motorcycleName"),
+      motorcycleModel: formData.get("motorcycleModel") || null,
+      repairDate: formData.get("repairDate"),
+      description: formData.get("description") || null,
+      repairStatus: formData.get("repairStatus"),
+      serviceRecords: getServices(servicesContainer),
+      jobOrderItems: getJobOrderItems(itemsContainer)
+    };
+    try {
+      const response = await fetch("/api/job-orders", {
+        method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
         credentials: "same-origin",
         body: JSON.stringify(jobOrderData)
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result.message || "Failed to create job order."
+        );
       }
-    );
 
-    const result = await response.json();
+      modal.close();
+      form.reset();
+      itemsContainer.replaceChildren();
 
-    if (!response.ok) {
-      throw new Error(
-        result.message || "Failed to update job order."
+      setDefaultDate("repairDate");
+
+      await loadJobOrders(inventoryItems);
+
+      alert("Job order created successfully.");
+    } catch (error) {
+      console.error("Create Job Order:", error);
+      alert(error.message);
+    }
+  }
+
+  // UPDATE JOB ORDER
+  async function updateJobOrder(event, form, modal, inventoryItems, editServicesContainer) {
+    event.preventDefault();
+
+    const formData = new FormData(form);
+    const jobOrderId = formData.get("jobOrderId");
+    const editItemsContainer = document.getElementById("editJobOrderItemsTableBody");
+
+    const jobOrderData = {
+      customerName: formData.get("customerName"),
+      customerContactNumber: formData.get("customerContactNumber"),
+      motorcycleName: formData.get("motorcycleName"),
+      motorcycleModel: formData.get("motorcycleModel") || null,
+      repairDate: formData.get("repairDate"),
+      description: formData.get("description") || null,
+      repairStatus: formData.get("repairStatus"),
+      serviceRecords: getServices(editServicesContainer),
+      jobOrderItems: getJobOrderItems(editItemsContainer)
+    };
+
+    try {
+      const response = await fetch(
+        `/api/job-orders/${jobOrderId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          credentials: "same-origin",
+          body: JSON.stringify(jobOrderData)
+        }
       );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result.message || "Failed to update job order."
+        );
+      }
+
+      modal.close();
+
+      await loadJobOrders(inventoryItems);
+
+      alert("Job order updated successfully.");
+    } catch (error) {
+      console.error("Update Job Order:", error);
+      alert(error.message);
+    }
+  }
+
+  // DELETE JOB ORDER
+  async function deleteJobOrder(jobOrderId, inventoryItems) {
+    if (!jobOrderId) {
+      alert("No job order was selected.");
+      return;
     }
 
-    modal.close();
-
-    await loadJobOrders(inventoryItems);
-
-    alert("Job order updated successfully.");
-  } catch (error) {
-    console.error("Update Job Order:", error);
-    alert(error.message);
-  }
-}
-
-// DELETE JOB ORDER
-async function deleteJobOrder(jobOrderId, inventoryItems) {
-  if (!jobOrderId) {
-    alert("No job order was selected.");
-    return;
-  }
-
-  const confirmed = confirm(
-    "Are you sure you want to delete this job order?"
-  );
-
-  if (!confirmed) {
-    return;
-  }
-
-  try {
-    const response = await fetch(
-      `/api/job-orders/${jobOrderId}`,
-      {
-        method: "DELETE",
-        credentials: "same-origin"
-      }
+    const confirmed = confirm(
+      "Are you sure you want to delete this job order?"
     );
 
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        result.message || "Failed to delete job order."
-      );
+    if (!confirmed) {
+      return;
     }
 
-    await loadJobOrders(inventoryItems);
+    try {
+      const response = await fetch(
+        `/api/job-orders/${jobOrderId}`,
+        {
+          method: "DELETE",
+          credentials: "same-origin"
+        }
+      );
 
-    alert("Job order deleted successfully.");
-  } catch (error) {
-    console.error("Delete Job Order:", error);
-    alert(error.message);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result.message || "Failed to delete job order."
+        );
+      }
+
+      await loadJobOrders(inventoryItems);
+
+      alert("Job order deleted successfully.");
+    } catch (error) {
+      console.error("Delete Job Order:", error);
+      alert(error.message);
+    }
   }
-}
 

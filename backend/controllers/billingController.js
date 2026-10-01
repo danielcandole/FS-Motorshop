@@ -11,6 +11,9 @@ export async function handleCreateBillingData(request, response) {
   
 }
 
+export async function handleReadBillingData(request, response) {
+  
+}
 export async function handleReadJobOrderBillingData(request, response) {
 
   const validation = validateJobOrderId(request.jobOrderId);
@@ -40,9 +43,9 @@ export async function handleReadJobOrderBillingData(request, response) {
     sendJson(response, 500, {message: "Failed to fetch job order billing data."});
   }
 }
-export async function handleUpdateJobOrderBillingData(request, response) {
+export async function handleUpdateBillingData(request, response) {
   
 }
-export async function handleDeleteJobOrderBillingData(request, response) {
+export async function handleDeleteBillingData(request, response) {
   
 }

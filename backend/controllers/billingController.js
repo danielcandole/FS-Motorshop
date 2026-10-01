@@ -5,6 +5,12 @@ import { readJobOrderBillingData } from "../services/billingService.js";
 import { sendJson } from "../../frontend/js/utils/jsonUtils.js";
 
 
+
+
+export async function handleCreateBillingData(request, response) {
+  
+}
+
 export async function handleReadJobOrderBillingData(request, response) {
 
   const validation = validateJobOrderId(request.jobOrderId);
@@ -33,4 +39,10 @@ export async function handleReadJobOrderBillingData(request, response) {
     console.error("Read Job Order Billing Data:", error);
     sendJson(response, 500, {message: "Failed to fetch job order billing data."});
   }
+}
+export async function handleUpdateJobOrderBillingData(request, response) {
+  
+}
+export async function handleDeleteJobOrderBillingData(request, response) {
+  
 }

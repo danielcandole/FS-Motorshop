@@ -25,7 +25,12 @@ import {
   handleDeleteInventoryItem
 } from "../controllers/inventoryItemController.js";
 
-import { handleReadJobOrderBillingData } from "../controllers/billingPaymentReceiptController.js";
+import { 
+  handleCreateBillingData,
+  handleReadJobOrderBillingData,
+  handleUpdateBillingData,
+  handleDeleteBillingData
+ } from "../controllers/billingController.js";
 
 export async function handleAuthRoute(request, response, body) {
   
@@ -169,12 +174,34 @@ export async function handleAuthRoute(request, response, body) {
   }
 
   // JOB ORDER BILLING
-  const jobOrderBillingMatch = pathname.match(/^\/api\/job-orders\/\d+\/billing$/);
-  
-  if (jobOrderBillingMatch && request.method === "GET") {
-    request.jobOrderId = Number(pathname.match(/^\/api\/job-orders\/(\d+)\/billing$/)[1]);
-    await handleReadJobOrderBillingData(request, response);
-    return true;
+  const jobOrderBillingMatch = pathname.match(
+    /^\/api\/job-orders\/(\d+)\/billing$/
+  );
+
+  if (jobOrderBillingMatch) {
+    request.jobOrderId = Number(jobOrderBillingMatch[1]);
+
+    if (request.method === "GET") {
+      await handleReadJobOrderBillingData(request, response);
+      return true;
+    }
+
+    if (request.method === "POST") {
+      request.body = body;
+      await handleCreateBillingData(request, response);
+      return true;
+    }
+
+    if (request.method === "PUT") {
+      request.body = body;
+      await handleUpdateBillingData(request, response);
+      return true;
+    }
+
+    if (request.method === "DELETE") {
+      await handleDeleteBillingData(request, response);
+      return true;
+    }
   }
 
   return false;

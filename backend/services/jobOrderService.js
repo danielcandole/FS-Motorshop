@@ -1,4 +1,6 @@
 import pool from "../config/database.js";
+import { deductInventoryStock } from "./inventoryItemService.js";
+import { createStockTransaction } from "./stockTransactionService.js";
 
 export async function createJobOrderData(request) {
   const connection = await pool.getConnection();
@@ -79,6 +81,8 @@ export async function createJobOrderData(request) {
     // Create job order items
     for (const item of jobOrderItems) {
       const {inventoryItemId, quantityUsed, unitPrice } = item;
+
+      await deductInventoryStock(connection, inventoryItemId, quantityUsed);
 
       await connection.execute(`
         INSERT INTO jobOrderItem (
@@ -243,6 +247,59 @@ export async function updateJobOrderData(request) {
         service.serviceDescription || null,
         service.laborCharge
       ]);
+    }
+
+    // GET EXISTING JOB ORDER ITEMS
+    const [existingItems] = await connection.execute(`
+      SELECT inventoryItemId, quantityUsed
+      FROM jobOrderItem
+      WHERE jobOrderId = ?
+    `, [jobOrderId]);
+
+    // CALCULATE OLD AND NEW QUANTITIES
+    const oldQuantities = new Map();
+    const newQuantities = new Map();
+
+    for (const item of existingItems) {
+      const id = item.inventoryItemId;
+      oldQuantities.set(id, (oldQuantities.get(id) || 0) + item.quantityUsed);
+    }
+
+    for (const item of jobOrderItems) {
+      const id = item.inventoryItemId;
+      newQuantities.set(id, (newQuantities.get(id) || 0) + item.quantityUsed);
+    }
+
+    // ADJUST INVENTORY STOCK
+    const inventoryItemIds = new Set([
+      ...oldQuantities.keys(),
+      ...newQuantities.keys()
+    ]);
+
+    for (const inventoryItemId of inventoryItemIds) {
+      const oldQuantity = oldQuantities.get(inventoryItemId) || 0;
+      const newQuantity = newQuantities.get(inventoryItemId) || 0;
+      const difference = newQuantity - oldQuantity;
+
+      if (difference > 0) {
+        await deductInventoryStock(connection, inventoryItemId, difference);
+      }
+      else if (difference < 0) {
+        const quantityReturned = Math.abs(difference);
+
+        await connection.execute(`
+          UPDATE inventoryItem
+          SET quantity = quantity + ?
+          WHERE inventoryItemId = ?
+        `, [quantityReturned, inventoryItemId]);
+
+        await createStockTransaction(
+          connection,
+          quantityReturned,
+          "Stock In",
+          { inventoryItemId }
+        );
+      }
     }
 
     // UPDATE JOB ORDER ITEMS

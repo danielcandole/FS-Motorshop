@@ -14,7 +14,7 @@ export async function createJobOrderData(request) {
       repairDate,
       description,
       repairStatus,
-      serviceRecord,
+      serviceRecords,
       jobOrderItems
     } = request.validatedJobOrder;
 
@@ -56,9 +56,9 @@ export async function createJobOrderData(request) {
 
     const jobOrderId = jobOrderResult.insertId;
 
-    // Create service record
-    if (serviceRecord) {
-      const { serviceType, serviceDescription, laborCharge } = serviceRecord;
+    // CREATE SERVICE RECORDS
+    for (const service of serviceRecords) {
+      const {serviceType, serviceDescription, laborCharge} = service;
 
       await connection.execute(`
         INSERT INTO serviceRecord (
@@ -176,7 +176,7 @@ export async function updateJobOrderData(request) {
       repairDate,
       description,
       repairStatus,
-      serviceRecord,
+      serviceRecords,
       jobOrderItems
     } = request.validatedJobOrder;
 
@@ -222,46 +222,27 @@ export async function updateJobOrderData(request) {
         AND deletedAt IS NULL
     `, [formattedRepairDate, description || null, repairStatus, jobOrderId]);
 
-    // UPDATE SERVICE RECORD
-    const [serviceRecords] = await connection.execute(`
-      SELECT serviceRecordId
-      FROM serviceRecord
+    // UPDATE SERVICE RECORDS
+    await connection.execute(`
+      DELETE FROM serviceRecord
       WHERE jobOrderId = ?
-      LIMIT 1
     `, [jobOrderId]);
 
-    if (serviceRecord) {
-      if (serviceRecords.length > 0) {
-        await connection.execute(`
-          UPDATE serviceRecord
-          SET serviceType = ?, serviceDescription = ?, laborCharge = ?
-          WHERE jobOrderId = ?
-        `, [
-          serviceRecord.serviceType,
-          serviceRecord.serviceDescription || null,
-          serviceRecord.laborCharge,
-          jobOrderId
-        ]);
-      }
-      else {
-        await connection.execute(`
-          INSERT INTO serviceRecord (
-            jobOrderId, serviceType, serviceDescription, laborCharge
-          )
-          VALUES (?, ?, ?, ?)
-        `, [
-          jobOrderId,
-          serviceRecord.serviceType,
-          serviceRecord.serviceDescription || null,
-          serviceRecord.laborCharge
-        ]);
-      }
-    }
-    else if (serviceRecords.length > 0) {
+    for (const service of serviceRecords) {
       await connection.execute(`
-        DELETE FROM serviceRecord
-        WHERE jobOrderId = ?
-      `, [jobOrderId]);
+        INSERT INTO serviceRecord (
+          jobOrderId,
+          serviceType,
+          serviceDescription,
+          laborCharge
+        )
+        VALUES (?, ?, ?, ?)
+      `, [
+        jobOrderId,
+        service.serviceType,
+        service.serviceDescription || null,
+        service.laborCharge
+      ]);
     }
 
     // UPDATE JOB ORDER ITEMS

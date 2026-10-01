@@ -120,3 +120,21 @@ const returnDataTesting =
   ],
   partsTotal: 700
 }
+
+
+export async function createBillingData(request) {
+
+}
+
+export async function readBillingData(request) {
+
+}
+
+export async function updateBillingData(request) {
+
+}
+
+export async function deleteBillingData(request) {
+
+}
+

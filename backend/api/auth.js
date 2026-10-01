@@ -27,6 +27,7 @@ import {
 
 import { 
   handleCreateBillingData,
+  handleReadBillingData,
   handleReadJobOrderBillingData,
   handleUpdateBillingData,
   handleDeleteBillingData
@@ -183,6 +184,12 @@ export async function handleAuthRoute(request, response, body) {
 
     if (request.method === "GET") {
       await handleReadJobOrderBillingData(request, response);
+      return true;
+    }
+
+    if (request.method === "POST") {
+      request.body = body;
+      await handleReadBillingData(request, response);
       return true;
     }
 

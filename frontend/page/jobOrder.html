@@ -669,31 +669,31 @@
             <input type="datetime-local" id="receiptDate" required>
           </label>
 
-          <!-- RECEIPT FILE DIALOG -->
-          <dialog id="receiptFileDialog" class="receiptFileDialog">
-            <div class="receiptFileHeader">
-              <h3>Receipt File</h3>
-              <button
-                type="button"
-                id="closeReceiptDialog"
-                class="closeReceiptDialog"
-                aria-label="Close receipt"
-              >
-                &times;
-              </button>
-            </div>
-
-            <div class="receiptFileContent">
-              <iframe
-                id="receiptFileFrame"
-                title="Receipt PDF"
-              ></iframe>
-            </div>
-          </dialog>
+          <div>
+            <span>Receipt File</span>
+            <button type="button" id="receiptFile" disabled>
+              N/A
+            </button>
+          </div>
         </div>
       </section>
-    </div>
 
+      <!-- RECEIPT FILE POPUP -->
+      <dialog id="receiptFileDialog">
+        <div class="receiptFileHeader">
+          <h3>Receipt</h3>
+          <button
+            type="button"
+            id="closeReceiptDialog"
+            aria-label="Close"
+          >
+            &times;
+          </button>
+        </div>
+
+        <iframe id="receiptFileFrame" title="Receipt PDF"></iframe>
+      </dialog>
+      
     <footer class="billingFooter">
       <button type="button" class="cancelButton" id="cancelBilling">
         Cancel

@@ -23,6 +23,32 @@ function updateBillingTotals(jobOrder) {
   document.getElementById("remainingBalance").textContent = `₱${formatCurrency(remainingBalance)}`;
 }
 
+// POPULATE RECEIPT FILE
+function populateReceiptFile(receiptFile) {
+  const receiptButton = document.getElementById("receiptFile");
+  const receiptDialog = document.getElementById("receiptFileDialog");
+  const receiptFrame = document.getElementById("receiptFileFrame");
+  const closeButton = document.getElementById("closeReceiptDialog");
+
+  receiptButton.textContent = receiptFile ? "View Receipt" : "N/A";
+  receiptButton.disabled = !receiptFile;
+
+  receiptButton.onclick = () => {
+    if (!receiptFile) return;
+
+    receiptFrame.src = `/${receiptFile}`;
+    receiptDialog.showModal();
+  };
+
+  closeButton.onclick = () => {
+    receiptDialog.close();
+  };
+
+  receiptDialog.onclose = () => {
+    receiptFrame.src = "";
+  };
+}
+
 // POPULATE BILLING DIALOG
 function populateBillingDialog(jobOrder, serviceBill = null) {
   const {
@@ -72,7 +98,8 @@ function populateBillingDialog(jobOrder, serviceBill = null) {
     ? toDateTimeLocalValue(receiptDate)
     : "N/A";
 
-  document.getElementById("receiptFile").textContent = receiptFile;
+  populateReceiptFile(receiptFile);
+
   document.getElementById("savePayment").textContent = serviceBill
     ? "Update Bill"
     : "Save Payment";

@@ -1,41 +1,3 @@
-// STOCK TRANSACTION ELEMENTS
-const stockTransactionTableBody = document.getElementById(
-  "stockTransactionTableBody"
-);
-
-const totalTransactionsElement = document.getElementById(
-  "totalTransactions"
-);
-
-const totalStockInElement = document.getElementById(
-  "totalStockIn"
-);
-
-const totalStockOutElement = document.getElementById(
-  "totalStockOut"
-);
-
-const stockTransactionSearch = document.getElementById(
-  "stockTransactionSearch"
-);
-
-const stockTransactionFilter = document.getElementById(
-  "stockTransactionFilter"
-);
-
-const previousStockTransactionPage = document.getElementById(
-  "previousStockTransactionPage"
-);
-
-const nextStockTransactionPage = document.getElementById(
-  "nextStockTransactionPage"
-);
-
-const stockTransactionPages = document.getElementById(
-  "stockTransactionPages"
-);
-
-
 // STOCK TRANSACTION STATE
 let stockTransactions = [];
 let filteredStockTransactions = [];
@@ -52,33 +14,34 @@ async function fetchStockTransactionData() {
       credentials: "same-origin"
     });
 
+    const result = await response.json();
+
+    console.log("STOCK TRANSACTION DATA:", result);
+
     if (!response.ok) {
-      throw new Error("Failed to fetch stock transactions.");
+      throw new Error(
+        result.message || "Failed to fetch stock transactions."
+      );
     }
 
-    stockTransactions = await response.json();
+    if (!Array.isArray(result.data)) {
+      throw new Error("Invalid stock transaction data.");
+    }
 
+    stockTransactions = result.data;
     filteredStockTransactions = [...stockTransactions];
 
-    renderStockTransactionSummary();
-    renderStockTransactionTable();
+    return true;
   }
   catch (error) {
     console.error("Fetch Stock Transaction:", error);
-
-    stockTransactionTableBody.innerHTML = `
-      <tr>
-        <td colspan="8" class="tableMessage">
-          Failed to load stock transactions.
-        </td>
-      </tr>
-    `;
+    throw error;
   }
 }
 
 
 // RENDER TRANSACTION SUMMARY
-function renderStockTransactionSummary() {
+function renderStockTransactionSummary(elements) {
   const totalStockIn = stockTransactions.filter(
     transaction => transaction.transactionType === "Stock In"
   ).length;
@@ -87,26 +50,27 @@ function renderStockTransactionSummary() {
     transaction => transaction.transactionType === "Stock Out"
   ).length;
 
-  totalTransactionsElement.textContent = stockTransactions.length;
-  totalStockInElement.textContent = totalStockIn;
-  totalStockOutElement.textContent = totalStockOut;
+  elements.totalTransactions.textContent = stockTransactions.length;
+  elements.totalStockIn.textContent = totalStockIn;
+  elements.totalStockOut.textContent = totalStockOut;
 }
 
 
 // FILTER STOCK TRANSACTIONS
-function filterStockTransactions() {
-  const searchValue = stockTransactionSearch.value
+function filterStockTransactions(elements) {
+  const searchValue = elements.search.value
     .trim()
     .toLowerCase();
 
-  const transactionType = stockTransactionFilter.value;
+  const transactionType = elements.filter.value;
 
   filteredStockTransactions = stockTransactions.filter(
     transaction => {
       const matchesSearch =
         String(transaction.stockTransactionId)
+          .toLowerCase()
           .includes(searchValue) ||
-        (transaction.itemName || "")
+        String(transaction.itemName || "")
           .toLowerCase()
           .includes(searchValue);
 
@@ -120,17 +84,23 @@ function filterStockTransactions() {
 
   currentStockTransactionPage = 1;
 
-  renderStockTransactionTable();
+  renderStockTransactionTable(elements);
 }
 
 
 // FORMAT CURRENCY
 function formatStockTransactionPrice(price) {
-  if (price === null || price === undefined) {
+  if (price === null || price === undefined || price === "") {
     return "—";
   }
 
-  return Number(price).toLocaleString("en-PH", {
+  const numericPrice = Number(price);
+
+  if (!Number.isFinite(numericPrice)) {
+    return "—";
+  }
+
+  return numericPrice.toLocaleString("en-PH", {
     style: "currency",
     currency: "PHP"
   });
@@ -146,6 +116,7 @@ function formatStockTransactionDate(dateValue) {
     };
   }
 
+  // MySQL DATETIME values are returned as "YYYY-MM-DD HH:mm:ss".
   const date = new Date(
     String(dateValue).replace(" ", "T")
   );
@@ -172,6 +143,15 @@ function formatStockTransactionDate(dateValue) {
 }
 
 
+// CREATE TABLE CELL
+function createStockTransactionCell(value) {
+  const cell = document.createElement("td");
+  cell.textContent = value ?? "—";
+
+  return cell;
+}
+
+
 // RENDER STOCK TRANSACTION ROW
 function createStockTransactionRow(transaction) {
   const {
@@ -187,46 +167,62 @@ function createStockTransactionRow(transaction) {
   } = transaction;
 
   const isStockIn = transactionType === "Stock In";
-
   const dateTime = formatStockTransactionDate(transactionDate);
 
   const price = isStockIn ? sellingPrice : unitPrice;
+  const quantityChanged = Number(transactionQuantity);
 
-  const quantityChanged = Number(transactionQuantity || 0);
-
-  const formattedQuantity = isStockIn
-    ? `+${quantityChanged}`
-    : `-${quantityChanged}`;
+  const formattedQuantity = Number.isFinite(quantityChanged)
+    ? `${isStockIn ? "+" : "-"}${quantityChanged}`
+    : "—";
 
   const row = document.createElement("tr");
 
-  const values = [
-    stockTransactionId,
-    itemName || "—",
-    quantity ?? "—",
-    quantityUsed ?? "—",
-    formatStockTransactionPrice(price)
-  ];
+  // ID
+  row.appendChild(
+    createStockTransactionCell(stockTransactionId)
+  );
 
-  values.forEach(value => {
-    const cell = document.createElement("td");
-    cell.textContent = value;
-    row.appendChild(cell);
-  });
+  // ITEM NAME
+  row.appendChild(
+    createStockTransactionCell(itemName)
+  );
 
+  // QUANTITY
+  row.appendChild(
+    createStockTransactionCell(quantity)
+  );
+
+  // QUANTITY USED
+  row.appendChild(
+    createStockTransactionCell(quantityUsed)
+  );
+
+  // UNIT PRICE
+  row.appendChild(
+    createStockTransactionCell(
+      formatStockTransactionPrice(price)
+    )
+  );
+
+  // DATE AND TIME
   const dateCell = document.createElement("td");
-  dateCell.innerHTML = `
-    <div class="transactionDate">
-      <span class="date"></span>
-      <span class="time"></span>
-    </div>
-  `;
+  const dateContainer = document.createElement("div");
+  const dateElement = document.createElement("span");
+  const timeElement = document.createElement("span");
 
-  dateCell.querySelector(".date").textContent = dateTime.date;
-  dateCell.querySelector(".time").textContent = dateTime.time;
+  dateContainer.className = "transactionDate";
+  dateElement.className = "date";
+  timeElement.className = "time";
 
+  dateElement.textContent = dateTime.date;
+  timeElement.textContent = dateTime.time;
+
+  dateContainer.append(dateElement, timeElement);
+  dateCell.appendChild(dateContainer);
   row.appendChild(dateCell);
 
+  // TRANSACTION TYPE
   const typeCell = document.createElement("td");
   const typeBadge = document.createElement("span");
 
@@ -239,11 +235,14 @@ function createStockTransactionRow(transaction) {
   typeCell.appendChild(typeBadge);
   row.appendChild(typeCell);
 
-  const quantityCell = document.createElement("td");
+  // QUANTITY CHANGED
+  const quantityCell = createStockTransactionCell(
+    formattedQuantity
+  );
+
   quantityCell.className = `quantityChanged ${
     isStockIn ? "stockIn" : "stockOut"
   }`;
-  quantityCell.textContent = formattedQuantity;
 
   row.appendChild(quantityCell);
 
@@ -252,13 +251,13 @@ function createStockTransactionRow(transaction) {
 
 
 // RENDER PAGINATION
-function renderStockTransactionPagination(totalPages) {
-  stockTransactionPages.innerHTML = "";
+function renderStockTransactionPagination(elements, totalPages) {
+  elements.pages.replaceChildren();
 
-  previousStockTransactionPage.disabled =
+  elements.previous.disabled =
     currentStockTransactionPage <= 1;
 
-  nextStockTransactionPage.disabled =
+  elements.next.disabled =
     currentStockTransactionPage >= totalPages;
 
   for (let page = 1; page <= totalPages; page++) {
@@ -266,46 +265,62 @@ function renderStockTransactionPagination(totalPages) {
 
     button.type = "button";
     button.textContent = page;
+
     button.classList.toggle(
       "active",
       page === currentStockTransactionPage
     );
 
-    button.setAttribute(
-      "aria-current",
-      page === currentStockTransactionPage ? "page" : "false"
-    );
+    if (page === currentStockTransactionPage) {
+      button.setAttribute("aria-current", "page");
+    }
 
     button.addEventListener("click", () => {
       currentStockTransactionPage = page;
-      renderStockTransactionTable();
+      renderStockTransactionTable(elements);
     });
 
-    stockTransactionPages.appendChild(button);
+    elements.pages.appendChild(button);
   }
 }
 
 
-// RENDER STOCK TRANSACTION TABLE
-function renderStockTransactionTable() {
-  stockTransactionTableBody.innerHTML = "";
+// RENDER TABLE MESSAGE
+function renderStockTransactionMessage(elements, message) {
+  const row = document.createElement("tr");
+  const cell = document.createElement("td");
 
+  cell.colSpan = 8;
+  cell.className = "tableMessage";
+  cell.textContent = message;
+
+  row.appendChild(cell);
+  elements.tableBody.replaceChildren(row);
+}
+
+
+// RENDER STOCK TRANSACTION TABLE
+function renderStockTransactionTable(elements) {
   const totalPages = Math.ceil(
-    filteredStockTransactions.length / STOCK_TRANSACTION_PAGE_SIZE
+    filteredStockTransactions.length /
+    STOCK_TRANSACTION_PAGE_SIZE
   );
 
   if (filteredStockTransactions.length === 0) {
-    stockTransactionTableBody.innerHTML = `
-      <tr>
-        <td colspan="8" class="tableMessage">
-          No transactions found.
-        </td>
-      </tr>
-    `;
+    renderStockTransactionMessage(
+      elements,
+      "No transactions found."
+    );
 
-    renderStockTransactionPagination(0);
+    renderStockTransactionPagination(elements, 0);
     return;
   }
+
+  // Keep the current page within the available range.
+  currentStockTransactionPage = Math.min(
+    currentStockTransactionPage,
+    totalPages
+  );
 
   const startIndex =
     (currentStockTransactionPage - 1) *
@@ -316,47 +331,96 @@ function renderStockTransactionTable() {
     startIndex + STOCK_TRANSACTION_PAGE_SIZE
   );
 
-  transactions.forEach(transaction => {
-    stockTransactionTableBody.appendChild(
-      createStockTransactionRow(transaction)
-    );
-  });
+  const rows = transactions.map(
+    transaction => createStockTransactionRow(transaction)
+  );
 
-  renderStockTransactionPagination(totalPages);
+  elements.tableBody.replaceChildren(...rows);
+
+  renderStockTransactionPagination(elements, totalPages);
 }
 
 
-// SEARCH AND FILTER EVENTS
-stockTransactionSearch.addEventListener(
-  "input",
-  filterStockTransactions
-);
+// INITIALIZE STOCK TRANSACTION PAGE
+export async function initStockTransactionPage() {
+  const elements = {
+    tableBody: document.getElementById(
+      "stockTransactionTableBody"
+    ),
+    totalTransactions: document.getElementById(
+      "totalTransactions"
+    ),
+    totalStockIn: document.getElementById(
+      "totalStockIn"
+    ),
+    totalStockOut: document.getElementById(
+      "totalStockOut"
+    ),
+    search: document.getElementById(
+      "stockTransactionSearch"
+    ),
+    filter: document.getElementById(
+      "stockTransactionFilter"
+    ),
+    previous: document.getElementById(
+      "previousStockTransactionPage"
+    ),
+    next: document.getElementById(
+      "nextStockTransactionPage"
+    ),
+    pages: document.getElementById(
+      "stockTransactionPages"
+    )
+  };
 
-stockTransactionFilter.addEventListener(
-  "change",
-  filterStockTransactions
-);
-
-
-// PAGINATION EVENTS
-previousStockTransactionPage.addEventListener("click", () => {
-  if (currentStockTransactionPage > 1) {
-    currentStockTransactionPage--;
-    renderStockTransactionTable();
+  // CHECK REQUIRED ELEMENTS
+  if (Object.values(elements).some(element => !element)) {
+    console.error(
+      "Stock Transaction Page: Required elements are missing."
+    );
+    return;
   }
-});
 
-nextStockTransactionPage.addEventListener("click", () => {
-  const totalPages = Math.ceil(
-    filteredStockTransactions.length / STOCK_TRANSACTION_PAGE_SIZE
-  );
+  // REGISTER SEARCH AND FILTER EVENTS
+  elements.search.addEventListener("input", () => {
+    filterStockTransactions(elements);
+  });
 
-  if (currentStockTransactionPage < totalPages) {
-    currentStockTransactionPage++;
-    renderStockTransactionTable();
+  elements.filter.addEventListener("change", () => {
+    filterStockTransactions(elements);
+  });
+
+  // REGISTER PAGINATION EVENTS
+  elements.previous.addEventListener("click", () => {
+    if (currentStockTransactionPage > 1) {
+      currentStockTransactionPage--;
+      renderStockTransactionTable(elements);
+    }
+  });
+
+  elements.next.addEventListener("click", () => {
+    const totalPages = Math.ceil(
+      filteredStockTransactions.length /
+      STOCK_TRANSACTION_PAGE_SIZE
+    );
+
+    if (currentStockTransactionPage < totalPages) {
+      currentStockTransactionPage++;
+      renderStockTransactionTable(elements);
+    }
+  });
+
+  // FETCH AND DISPLAY TRANSACTIONS
+  try {
+    await fetchStockTransactionData();
+
+    renderStockTransactionSummary(elements);
+    renderStockTransactionTable(elements);
   }
-});
-
-
-// INITIALIZE
-fetchStockTransactionData();
+  catch (error) {
+    renderStockTransactionMessage(
+      elements,
+      "Failed to load stock transactions."
+    );
+  }
+}

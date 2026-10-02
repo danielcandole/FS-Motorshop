@@ -25,28 +25,50 @@ function updateBillingTotals(jobOrder) {
 
 // POPULATE BILLING DIALOG
 function populateBillingDialog(jobOrder, serviceBill = null) {
+  const {
+    otherCharges = 0,
+    discount = 0,
+    paymentAmount = 0,
+    paymentDate = null,
+    receiptDate = null,
+    paymentRecord: {
+      receipt: {
+        receiptNumber = "Generated automatically"
+      } = {}
+    } = {}
+  } = serviceBill ?? {};
+  console.log(receiptNumber);
   const setText = (id, value) => {
     document.getElementById(id).textContent = value ?? "—";
   };
 
-  setText("billingJobOrderId", `JO-${String(jobOrder.jobOrderId).padStart(3, "0")}`);
+  setText(
+    "billingJobOrderId",
+    `JO-${String(jobOrder.jobOrderId).padStart(3, "0")}`
+  );
+
   setText("billingCustomerName", jobOrder.customerName);
   setText("billingMotorcycleName", jobOrder.motorcycleName);
 
-  document.getElementById("partsTotal").value = Number(jobOrder.partsTotal || 0);
-  document.getElementById("laborTotal").value = Number(jobOrder.laborTotal || 0);
+  document.getElementById("partsTotal").value =
+    Number(jobOrder.partsTotal || 0);
 
-  document.getElementById("otherCharges").value = serviceBill?.otherCharges ?? 0;
-  document.getElementById("discount").value = serviceBill?.discount ?? 0;
-  document.getElementById("paymentAmount").value = serviceBill?.paymentAmount ?? "";
+  document.getElementById("laborTotal").value =
+    Number(jobOrder.laborTotal || 0);
 
-  document.getElementById("paymentDate").value = serviceBill?.paymentDate
-    ? toDateTimeLocalValue(serviceBill.paymentDate)
+  document.getElementById("otherCharges").value = otherCharges;
+  document.getElementById("discount").value = discount;
+  document.getElementById("paymentAmount").value = paymentAmount;
+
+  document.getElementById("paymentDate").value = paymentDate
+    ? toDateTimeLocalValue(paymentDate)
     : "";
 
-  document.getElementById("receiptDate").value = serviceBill?.receiptDate
-    ? toDateTimeLocalValue(serviceBill.receiptDate)
-    : "";
+  document.getElementById("receiptNumber").textContent = receiptNumber;
+
+  document.getElementById("receiptDate").value = receiptDate
+    ? toDateTimeLocalValue(receiptDate)
+    : "N/A";
 
   document.getElementById("savePayment").textContent = serviceBill
     ? "Update Bill"
@@ -127,9 +149,9 @@ export function initBillingDialog(onBillSaved) {
           populateBillingDialog(jobOrder, jobOrder.serviceBill);
         } else {
           billingMode = "create";
+          populateBillingDialog(jobOrder);
           setDefaultDate("paymentDate");
           setDefaultDate("receiptDate");
-          populateBillingDialog(jobOrder);
         }
 
         billingDialog.showModal();

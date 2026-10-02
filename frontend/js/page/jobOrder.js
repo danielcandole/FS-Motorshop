@@ -473,17 +473,20 @@ async function loadJobOrders(inventoryItems = [], billing) {
       console.error("Job Orders: One or more required HTML elements were not found.");
       return;
     }
-    const billing = initBillingDialog();
-
-    if (!billing) {
-      return;
-    }
     let inventoryItems = [];
-
+    let billing;
+    
     try {
       inventoryItems = await loadInventoryItems();
     } catch (error) {
       console.error("Load Inventory Items:", error);
+    }
+
+
+    billing = initBillingDialog(() => loadJobOrders(inventoryItems, billing));
+
+    if (!billing) {
+      return;
     }
 
     await loadJobOrders(inventoryItems, billing);

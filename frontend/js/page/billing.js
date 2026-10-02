@@ -72,7 +72,7 @@ async function fetchBillingData(jobOrderId) {
 }
 
 // INITIALIZE BILLING DIALOG
-export function initBillingDialog() {
+export function initBillingDialog(onBillSaved) {
   const billingDialog = document.getElementById("billingDialog");
   const billingForm = document.getElementById("billingForm");
   const closeBillingButton = document.getElementById("closeBillingDialog");
@@ -106,9 +106,9 @@ export function initBillingDialog() {
   
   billingForm.addEventListener("submit", (event) => {
     if (billingMode === "edit") {
-      updateBilling(event, billingJobOrder);
+      updateBilling(event, billingJobOrder, onBillSaved);
     } else {
-      savePayment(event, billingJobOrder);
+      savePayment(event, billingJobOrder, onBillSaved);
     }
   });
 
@@ -142,21 +142,27 @@ export function initBillingDialog() {
 }
 
 // CREATE BILL
-async function savePayment(event, billingJobOrder) {
+async function savePayment(event, billingJobOrder, onBillSaved) {
   event.preventDefault();
 
+
   const paymentData = {
-    jobOrderId: billingJobOrder.jobOrderId,
-    partsTotal: Number(document.getElementById("partsTotal").value),
-    laborTotal: Number(document.getElementById("laborTotal").value),
-    otherCharges: Number(document.getElementById("otherCharges").value) || null,
-    discount: Number(document.getElementById("discount").value) || null,
-    totalAmount: Number(document.getElementById("totalAmount").textContent.replace(/[₱,]/g, "")),
-    paymentDate: document.getElementById("paymentDate").value,
-    paymentAmount: Number(document.getElementById("paymentAmount").value),
-    paymentBalance: Number(document.getElementById("remainingBalance").textContent.replace(/[₱,]/g, "")),
-    receiptDate: new Date(document.getElementById("receiptDate").value).toISOString()
+    jobOrder: {
+      jobOrderId: billingJobOrder.jobOrderId
+    },
+    charges: {
+      otherCharges: Number(document.getElementById("otherCharges").value) || null,
+      discount: Number(document.getElementById("discount").value) || null
+    },
+    payment: {
+      paymentDate: document.getElementById("paymentDate").value,
+      paymentAmount: Number(document.getElementById("paymentAmount").value)
+    },
+    receipt: {
+      receiptDate: new Date(document.getElementById("receiptDate").value).toISOString()
+    }
   };
+
 
   try {
     const response = await fetch("/api/billing", {
@@ -173,6 +179,9 @@ async function savePayment(event, billingJobOrder) {
     }
 
     document.getElementById("billingDialog").close();
+    if (onBillSaved) {
+      await onBillSaved();
+    }
     alert("Payment saved successfully.");
   } catch (error) {
     console.error("Save Payment:", error);
@@ -181,7 +190,7 @@ async function savePayment(event, billingJobOrder) {
 }
 
 // UPDATE BILL
-async function updateBilling(event, billingJobOrder) {
+async function updateBilling(event, billingJobOrder, onBillSaved) {
   event.preventDefault();
 
   const serviceBillId = billingJobOrder.serviceBill.serviceBillId;
@@ -189,10 +198,8 @@ async function updateBilling(event, billingJobOrder) {
   const billingData = {
     otherCharges: Number(document.getElementById("otherCharges").value) || null,
     discount: Number(document.getElementById("discount").value) || null,
-    totalAmount: Number(document.getElementById("totalAmount").textContent.replace(/[₱,]/g, "")),
     paymentDate: document.getElementById("paymentDate").value,
     paymentAmount: Number(document.getElementById("paymentAmount").value),
-    paymentBalance: Number(document.getElementById("remainingBalance").textContent.replace(/[₱,]/g, "")),
     receiptDate: new Date(document.getElementById("receiptDate").value).toISOString()
   };
 

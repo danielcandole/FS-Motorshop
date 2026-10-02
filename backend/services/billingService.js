@@ -146,12 +146,10 @@ export async function readJobOrderBillingData(request) {
 // CREATE BILLING DATA
 export async function createBillingData(request) {
   const {
-    jobOrderId,
-    otherCharges,
-    discount,
-    paymentDate,
-    paymentAmount,
-    receiptDate
+    jobOrder: {jobOrderId},
+    charges: {otherCharges, discount},
+    payment: {paymentDate, paymentAmount},
+    receipt: {receiptDate}
   } = request.validatedBilling;
 
   const connection = await pool.getConnection();

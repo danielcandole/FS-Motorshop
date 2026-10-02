@@ -110,9 +110,9 @@ export async function handleUpdateBillingData(request, response) {
     const employee = await authenticate(request, response);
     if (!employee) return;
     if (!await authorized(request, response, "billing.create")) return;
-
-    const data = await updateBillingData(request);
-    sendJson(response, 200, { message: "Billing updated successfully.", data });
+    console.log("UPDATE BILL: ", request.validatedBilling);
+    // const data = await updateBillingData(request);
+    // sendJson(response, 200, { message: "Billing updated successfully.", data });
   }
   catch (error) {
     console.error("Update Billing:", error);

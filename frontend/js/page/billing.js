@@ -33,11 +33,13 @@ function populateBillingDialog(jobOrder, serviceBill = null) {
     receiptDate = null,
     paymentRecord: {
       receipt: {
-        receiptNumber = "Generated automatically"
+        receiptNumber = "Generated automatically",
+        receiptFile = ""
       } = {}
     } = {}
   } = serviceBill ?? {};
-  console.log(receiptNumber);
+
+  console.log(receiptFile);
   const setText = (id, value) => {
     document.getElementById(id).textContent = value ?? "—";
   };
@@ -70,6 +72,7 @@ function populateBillingDialog(jobOrder, serviceBill = null) {
     ? toDateTimeLocalValue(receiptDate)
     : "N/A";
 
+  document.getElementById("receiptFile").textContent = receiptFile;
   document.getElementById("savePayment").textContent = serviceBill
     ? "Update Bill"
     : "Save Payment";

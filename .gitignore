@@ -121,3 +121,8 @@ playwright-report/
 
 # testing
 tests/
+
+
+# Generated receipt PDFs
+/storage/receipts/*
+!/storage/receipts/.gitkeep

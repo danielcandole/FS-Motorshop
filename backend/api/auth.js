@@ -192,7 +192,22 @@ export async function handleAuthRoute(request, response, body) {
     await handleCreateBillingData(request, response);
     return true;
   }
+  const billingMatch = pathname.match(/^\/api\/billing\/(\d+)$/);
 
+  if (billingMatch) {
+    request.serviceBillId = Number(billingMatch[1]);
+
+    if (request.method === "PUT") {
+      request.body = body;
+      await handleUpdateBillingData(request, response);
+      return true;
+    }
+
+    // if (request.method === "DELETE") {
+    //   await handleDeleteInventoryItem(request, response);
+    //   return true;
+    // }
+  }
   // if (request.method === "POST") {
   //   request.body = body;
   //   await handleReadBillingData(request, response);

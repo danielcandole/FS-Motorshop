@@ -17,7 +17,7 @@ export async function handleReadJobOrderBillingData(request, response) {
   try {
     const employee = await authenticate(request, response);
     if (!employee) return;
-    if (!await authorized(request, response, "billing.create")) return;
+    if (!await authorized(request, response, "billing.read")) return;
 
     const data = await readJobOrderBillingData(request);
     if (!data) {
@@ -75,7 +75,7 @@ export async function handleReadBillingData(request, response) {
   try {
     const employee = await authenticate(request, response);
     if (!employee) return;
-    if (!await authorized(request, response, "billing.create")) return;
+    if (!await authorized(request, response, "billing.read")) return;
 
     const data = await readBillingData(request);
     if (!data) {
@@ -109,8 +109,8 @@ export async function handleUpdateBillingData(request, response) {
   try {
     const employee = await authenticate(request, response);
     if (!employee) return;
-    if (!await authorized(request, response, "billing.create")) return;
-
+    if (!await authorized(request, response, "billing.update")) return;
+    console.log("UPDATE BILL: ", request.validatedBilling);
     const data = await updateBillingData(request);
     sendJson(response, 200, { message: "Billing updated successfully.", data });
   }

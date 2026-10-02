@@ -15,33 +15,17 @@ import {isNonEmptyString, isValidDateTime, isStringWithinLength, isNumericString
 // receiptFile
 export function validateBillingInput(body) {
   const errors = [];
-
+  // destructuring
   const {
-    jobOrderId,
-    partsTotal,
-    laborTotal,
-    otherCharges,
-    discount,
-    totalAmount,
-    paymentDate,
-    paymentAmount,
-    paymentBalance,
-    receiptDate
+    jobOrder: {jobOrderId},
+    charges: {otherCharges, discount},
+    payment: {paymentDate, paymentAmount},
+    receipt: {receiptDate}
   } = body;
 
   // Job Order ID
   if (!Number.isInteger(jobOrderId) || jobOrderId <= 0) {
     errors.push("Invalid job order ID.");
-  }
-
-  // Parts Total
-  if (typeof partsTotal !== "number" || !Number.isFinite(partsTotal) || partsTotal < 0) {
-    errors.push("Invalid parts total.");
-  }
-
-  // Labor Total
-  if (typeof laborTotal !== "number" || !Number.isFinite(laborTotal) || laborTotal < 0) {
-    errors.push("Invalid labor total.");
   }
 
   // Other Charges
@@ -54,11 +38,6 @@ export function validateBillingInput(body) {
     errors.push("Invalid discount.");
   }
 
-  // Total Amount
-  if (typeof totalAmount !== "number" || !Number.isFinite(totalAmount) || totalAmount < 0) {
-    errors.push("Invalid total amount.");
-  }
-
   // Payment Date
   if (!isNonEmptyString(paymentDate) || !isValidDateTime(paymentDate)) {
     errors.push("Invalid payment date.");
@@ -67,11 +46,6 @@ export function validateBillingInput(body) {
   // Payment Amount
   if (typeof paymentAmount !== "number" || !Number.isFinite(paymentAmount) || paymentAmount < 0) {
     errors.push("Invalid payment amount.");
-  }
-
-  // Payment Balance
-  if (typeof paymentBalance !== "number" || !Number.isFinite(paymentBalance) || paymentBalance < 0) {
-    errors.push("Invalid payment balance.");
   }
 
   // Receipt Date
@@ -86,23 +60,22 @@ export function validateBillingInput(body) {
   return {
     valid: true,
     data: {
-      jobOrderId,
-      partsTotal,
-      laborTotal,
-      otherCharges,
-      discount,
-      totalAmount,
-      paymentDate,
-      paymentAmount,
-      paymentBalance,
-      receiptDate
+      jobOrder: {jobOrderId},
+      charges: {otherCharges, discount},
+      payment: {paymentDate, paymentAmount},
+      receipt: {receiptDate}
     }
   };
 }
+
 // VALIDATE BILLING UPDATE INPUT
 export function validateBillingUpdateInput(body) {
   const errors = [];
-  const { otherCharges, discount, paymentDate, paymentAmount, receiptDate } = body;
+  const {
+    charges: {otherCharges, discount},
+    payment: {paymentDate, paymentAmount},
+    receipt: {receiptDate}
+  } = body;
 
   if (otherCharges !== null && (typeof otherCharges !== "number" || !Number.isFinite(otherCharges) || otherCharges < 0)) {
     errors.push("Invalid other charges.");
@@ -121,5 +94,13 @@ export function validateBillingUpdateInput(body) {
   }
 
   if (errors.length) return { valid: false, errors };
-  return { valid: true, data: { otherCharges, discount, paymentDate, paymentAmount, receiptDate } };
+  
+  return {
+    valid: true,
+    data: {
+      charges: {otherCharges, discount},
+      payment: {paymentDate, paymentAmount},
+      receipt: {receiptDate}
+    }
+  };
 }

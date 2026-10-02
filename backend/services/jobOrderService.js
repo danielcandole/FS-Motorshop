@@ -379,24 +379,70 @@ export async function updateJobOrderData(request) {
 }
 
 export async function deleteJobOrderData(request) {
+  const connection = await pool.getConnection();
+
   try {
-    const [result] = await pool.execute(`
+    await connection.beginTransaction();
+
+    // FIND ACTIVE JOB ORDER
+    const [jobOrders] = await connection.execute(`
+      SELECT jobOrderId
+      FROM jobOrder
+      WHERE jobOrderId = ?
+        AND deletedAt IS NULL
+      LIMIT 1
+      FOR UPDATE
+    `, [request.jobOrderId]);
+
+    if (jobOrders.length === 0) {
+      throw new Error("Job order not found.");
+    }
+
+    // GET JOB ORDER ITEMS
+    const [jobOrderItems] = await connection.execute(`
+      SELECT jobOrderItemId, inventoryItemId, quantityUsed
+      FROM jobOrderItem
+      WHERE jobOrderId = ?
+      FOR UPDATE
+    `, [request.jobOrderId]);
+
+    // RETURN INVENTORY STOCK
+    for (const item of jobOrderItems) {
+      await connection.execute(`
+        UPDATE inventoryItem
+        SET quantity = quantity + ?
+        WHERE inventoryItemId = ?
+      `, [item.quantityUsed, item.inventoryItemId]);
+
+      await createStockTransaction(
+        connection,
+        item.quantityUsed,
+        "Stock In",
+        { jobOrderItemId: item.jobOrderItemId }
+      );
+    }
+
+    // SOFT DELETE JOB ORDER
+    await connection.execute(`
       UPDATE jobOrder
       SET deletedAt = CURRENT_TIMESTAMP
       WHERE jobOrderId = ?
         AND deletedAt IS NULL
     `, [request.jobOrderId]);
 
-    if (result.affectedRows === 0) {
-      throw new Error("Job order not found.");
-    }
+    await connection.commit();
 
     return {
-      jobOrderId: request.jobOrderId
+      jobOrderId: request.jobOrderId,
+      returnedItems: jobOrderItems.length
     };
   }
   catch (error) {
+    await connection.rollback();
     console.error("Delete Job Order Service:", error);
     throw error;
+  }
+  finally {
+    connection.release();
   }
 }

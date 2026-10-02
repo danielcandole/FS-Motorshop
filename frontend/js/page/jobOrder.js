@@ -2,7 +2,7 @@ import { setDefaultDate, dateFormat, toDateTimeLocalValue } from "../utils/dateU
 import { initBillingDialog } from "./billing.js";
 
 // LOAD JOB ORDERS
-async function loadJobOrders(inventoryItems = [], billing = null) {
+async function loadJobOrders(inventoryItems = [], billing) {
   const jobOrdersList = document.getElementById("jobOrdersTableBody");
 
   if (!jobOrdersList) {
@@ -63,7 +63,7 @@ async function loadJobOrders(inventoryItems = [], billing = null) {
       deleteButton.textContent = "Delete";
 
       deleteButton.addEventListener("click", () => {
-        deleteJobOrder(jobOrder.jobOrderId, inventoryItems);
+        deleteJobOrder(jobOrder.jobOrderId, inventoryItems, billing);
       });
 
       const billButton = document.createElement("button");
@@ -524,14 +524,14 @@ async function loadJobOrders(inventoryItems = [], billing = null) {
     });
 
     form.addEventListener("submit", (event) => {
-      createJobOrder(event, form, modal, itemsContainer, inventoryItems, servicesContainer);
+      createJobOrder(event, form, modal, itemsContainer, inventoryItems, servicesContainer, billing);
     });
 
     // EDIT DIALOG
     closeEditButton.addEventListener("click", () => {editModal.close(); });
     cancelEditButton.addEventListener("click", () => {editModal.close();});
     editForm.addEventListener("submit", (event) => {
-      updateJobOrder(event, editForm, editModal, inventoryItems, editServicesContainer);
+      updateJobOrder(event, editForm, editModal, inventoryItems, editServicesContainer, billing);
     });
 
     addEditItemButton.addEventListener("click", () => {
@@ -547,7 +547,7 @@ async function loadJobOrders(inventoryItems = [], billing = null) {
   // EVENT LISTENER HELPER FUNCTIONS- - - - - - - - - - - - - - - - - - - - - 
 
   // CREATE JOB ORDER
-  async function createJobOrder(event, form, modal, itemsContainer, inventoryItems, servicesContainer) {
+  async function createJobOrder(event, form, modal, itemsContainer, inventoryItems, servicesContainer, billing) {
     event.preventDefault();
 
     const formData = new FormData(form);
@@ -587,7 +587,7 @@ async function loadJobOrders(inventoryItems = [], billing = null) {
 
       setDefaultDate("repairDate");
 
-      await loadJobOrders(inventoryItems);
+      await loadJobOrders(inventoryItems, billing);
 
       alert("Job order created successfully.");
     } catch (error) {
@@ -597,7 +597,7 @@ async function loadJobOrders(inventoryItems = [], billing = null) {
   }
 
   // UPDATE JOB ORDER
-  async function updateJobOrder(event, form, modal, inventoryItems, editServicesContainer) {
+  async function updateJobOrder(event, form, modal, inventoryItems, editServicesContainer, billing) {
     event.preventDefault();
 
     const formData = new FormData(form);
@@ -639,7 +639,7 @@ async function loadJobOrders(inventoryItems = [], billing = null) {
 
       modal.close();
 
-      await loadJobOrders(inventoryItems);
+      await loadJobOrders(inventoryItems, billing);
 
       alert("Job order updated successfully.");
     } catch (error) {
@@ -649,7 +649,7 @@ async function loadJobOrders(inventoryItems = [], billing = null) {
   }
 
   // DELETE JOB ORDER
-  async function deleteJobOrder(jobOrderId, inventoryItems) {
+  async function deleteJobOrder(jobOrderId, inventoryItems, billing) {
     if (!jobOrderId) {
       alert("No job order was selected.");
       return;
@@ -680,7 +680,7 @@ async function loadJobOrders(inventoryItems = [], billing = null) {
         );
       }
 
-      await loadJobOrders(inventoryItems);
+      await loadJobOrders(inventoryItems, billing);
 
       alert("Job order deleted successfully.");
     } catch (error) {

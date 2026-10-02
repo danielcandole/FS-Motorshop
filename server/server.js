@@ -14,6 +14,7 @@ const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, "..");
 const publicDirectory = path.join(projectRoot, "public");
 const frontendDirectory = path.join(projectRoot, "frontend");
+const receiptDirectory = path.join(projectRoot, "storage", "receipts");
 
 const PORT = 8000;
 
@@ -29,7 +30,8 @@ const mimeTypes = {
   ".svg": "image/svg+xml",
   ".ico": "image/x-icon",
   ".woff": "font/woff",
-  ".woff2": "font/woff2"
+  ".woff2": "font/woff2",
+  ".pdf": "application/pdf"
 };
 
 function sendFile(filePath, response) {
@@ -71,6 +73,23 @@ const server = http.createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host}`);
   const pathname = url.pathname;
 
+  if (pathname.startsWith("/storage/receipts/")) {
+    if (!await authenticate(request, response)) {
+      return;
+    }
+
+    const filename = path.basename(decodeURIComponent(pathname));
+
+    if (!filename.endsWith(".pdf")) {
+      response.writeHead(404, { "Content-Type": "text/plain" });
+      response.end("404 Not Found");
+      return;
+    }
+
+    sendFile(path.join(receiptDirectory, filename), response);
+    return;
+  }
+  
   if (pathname.startsWith("/api/")) {
     try {
       const body = await parseJsonBody(request);

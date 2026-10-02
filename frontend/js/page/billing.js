@@ -30,7 +30,7 @@ function populateReceiptFile(receiptFile) {
   const receiptFrame = document.getElementById("receiptFileFrame");
   const closeButton = document.getElementById("closeReceiptDialog");
 
-  receiptButton.textContent = receiptFile ? "View Receipt" : "N/A";
+  receiptButton.textContent = receiptFile ? "View Receipt" : "Generated automatically";
   receiptButton.disabled = !receiptFile;
 
   receiptButton.onclick = () => {

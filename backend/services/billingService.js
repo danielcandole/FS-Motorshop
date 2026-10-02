@@ -154,6 +154,8 @@ export async function createBillingData(request) {
   } = request.validatedBilling;
 
   const connection = await pool.getConnection();
+  let generatedReceipt = null;
+  let transactionCommitted = false;
 
   try {
     await connection.beginTransaction();
@@ -181,10 +183,15 @@ export async function createBillingData(request) {
       throw new Error("A bill already exists for this job order.");
     }
 
-    const [services, items] = await Promise.all([
+    const [jobOrder, services, items] = await Promise.all([
+      readBillingJobOrder(jobOrderId),
       readBillingServiceRecords(jobOrderId),
       readBillingJobOrderItems(jobOrderId)
     ]);
+
+    if (!jobOrder) {
+      throw new Error("Job order not found.");
+    }
 
     const partsTotal = Number(items.partsTotal.toFixed(2));
     const laborTotal = Number(services.laborTotal.toFixed(2));
@@ -204,6 +211,15 @@ export async function createBillingData(request) {
       (totalAmount - paymentAmount).toFixed(2)
     );
 
+    const formattedPaymentDate =
+      `${paymentDate.replace("T", " ")}:00`;
+
+    const formattedReceiptDate = new Date(receiptDate)
+      .toISOString()
+      .slice(0, 19)
+      .replace("T", " ");
+
+    // INSERT SERVICE BILL
     const [billResult] = await connection.execute(`
       INSERT INTO serviceBill (
         jobOrderId,
@@ -225,6 +241,7 @@ export async function createBillingData(request) {
 
     const serviceBillId = billResult.insertId;
 
+    // INSERT PAYMENT RECORD
     const [paymentResult] = await connection.execute(`
       INSERT INTO paymentRecord (
         serviceBillId,
@@ -235,55 +252,62 @@ export async function createBillingData(request) {
       VALUES (?, ?, ?, ?)
     `, [
       serviceBillId,
-      `${paymentDate.replace("T", " ")}:00`,
+      formattedPaymentDate,
       paymentAmount,
       paymentBalance
     ]);
 
     const paymentRecordId = paymentResult.insertId;
 
-    const formattedReceiptDate = new Date(receiptDate)
-      .toISOString()
-      .slice(0, 19)
-      .replace("T", " ");
-
-    const [receiptResult] = await connection.execute(`
-      INSERT INTO receipt (
+    // GENERATE RECEIPT
+    generatedReceipt = await syncBillingReceipt(
+      connection,
+      {
+        ...jobOrder,
+        jobOrderId,
         paymentRecordId,
-        receiptNumber,
-        receiptDate,
-        receiptFile
-      )
-      VALUES (?, ?, ?, ?)
-    `, [paymentRecordId, "", formattedReceiptDate, null]);
-
-    const paymentReceiptId = receiptResult.insertId;
-
-    const receiptDateTime = new Date(receiptDate)
-      .toISOString()
-      .slice(0, 16)
-      .replace(/[-:T]/g, "");
-
-    const receiptNumber =
-      `${receiptDateTime.slice(0, 8)}-${receiptDateTime.slice(8)}-${paymentReceiptId}`;
-
-    await connection.execute(`
-      UPDATE receipt
-      SET receiptNumber = ?
-      WHERE paymentReceiptId = ?
-    `, [receiptNumber, paymentReceiptId]);
+        partsTotal,
+        laborTotal,
+        otherCharges,
+        discount,
+        totalAmount,
+        paymentDate: formattedPaymentDate,
+        paymentAmount,
+        paymentBalance,
+        remainingBalance: paymentBalance
+      },
+      formattedReceiptDate
+    );
 
     await connection.commit();
+    transactionCommitted = true;
 
     return {
       serviceBillId,
       paymentRecordId,
-      paymentReceiptId,
-      receiptNumber
+      paymentReceiptId: generatedReceipt.paymentReceiptId,
+      receiptNumber: generatedReceipt.receiptNumber,
+      receiptFile: generatedReceipt.receiptFile
     };
   }
   catch (error) {
-    await connection.rollback();
+    if (!transactionCommitted) {
+      await connection.rollback();
+
+      // Remove the generated PDF if the transaction failed.
+      if (generatedReceipt?.filePath) {
+        try {
+          await deleteReceiptFile(generatedReceipt.filePath);
+        }
+        catch (cleanupError) {
+          console.error(
+            "Failed to clean up generated receipt:",
+            cleanupError
+          );
+        }
+      }
+    }
+
     throw error;
   }
   finally {

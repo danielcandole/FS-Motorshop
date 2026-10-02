@@ -196,11 +196,17 @@ async function updateBilling(event, billingJobOrder, onBillSaved) {
   const serviceBillId = billingJobOrder.serviceBill.serviceBillId;
 
   const billingData = {
-    otherCharges: Number(document.getElementById("otherCharges").value) || null,
-    discount: Number(document.getElementById("discount").value) || null,
-    paymentDate: document.getElementById("paymentDate").value,
-    paymentAmount: Number(document.getElementById("paymentAmount").value),
-    receiptDate: new Date(document.getElementById("receiptDate").value).toISOString()
+    charges: {
+      otherCharges: Number(document.getElementById("otherCharges").value) || null,
+      discount: Number(document.getElementById("discount").value) || null
+    },
+    payment: {
+      paymentDate: document.getElementById("paymentDate").value,
+      paymentAmount: Number(document.getElementById("paymentAmount").value)
+    },
+    receipt: {
+      receiptDate: new Date(document.getElementById("receiptDate").value).toISOString()
+    }
   };
 
   try {
@@ -218,6 +224,9 @@ async function updateBilling(event, billingJobOrder, onBillSaved) {
     }
 
     document.getElementById("billingDialog").close();
+    if (onBillSaved) {
+      await onBillSaved();
+    }
     alert("Bill updated successfully.");
   } catch (error) {
     console.error("Update Bill:", error);

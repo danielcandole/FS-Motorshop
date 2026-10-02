@@ -324,11 +324,9 @@ export async function readBillingData(request) {
 // UPDATE BILLING DATA
 export async function updateBillingData(request) {
   const {
-    otherCharges,
-    discount,
-    paymentDate,
-    paymentAmount,
-    receiptDate
+    charges: {otherCharges, discount},
+    payment: {paymentDate, paymentAmount},
+    receipt: {receiptDate}
   } = request.validatedBilling;
 
   const connection = await pool.getConnection();

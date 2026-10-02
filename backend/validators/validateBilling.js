@@ -71,7 +71,11 @@ export function validateBillingInput(body) {
 // VALIDATE BILLING UPDATE INPUT
 export function validateBillingUpdateInput(body) {
   const errors = [];
-  const { otherCharges, discount, paymentDate, paymentAmount, receiptDate } = body;
+  const {
+    charges: {otherCharges, discount},
+    payment: {paymentDate, paymentAmount},
+    receipt: {receiptDate}
+  } = body;
 
   if (otherCharges !== null && (typeof otherCharges !== "number" || !Number.isFinite(otherCharges) || otherCharges < 0)) {
     errors.push("Invalid other charges.");
@@ -90,5 +94,13 @@ export function validateBillingUpdateInput(body) {
   }
 
   if (errors.length) return { valid: false, errors };
-  return { valid: true, data: { otherCharges, discount, paymentDate, paymentAmount, receiptDate } };
+  
+  return {
+    valid: true,
+    data: {
+      charges: {otherCharges, discount},
+      payment: {paymentDate, paymentAmount},
+      receipt: {receiptDate}
+    }
+  };
 }

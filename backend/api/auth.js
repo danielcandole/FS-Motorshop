@@ -24,7 +24,6 @@ import {
   handleUpdateInventoryItem,
   handleDeleteInventoryItem
 } from "../controllers/inventoryItemController.js";
-
 import { 
   handleCreateBillingData,
   handleReadBillingData,
@@ -32,6 +31,7 @@ import {
   handleUpdateBillingData,
   handleDeleteBillingData
  } from "../controllers/billingController.js";
+import { handleReadStockTransaction } from "../controllers/stockTransactionController.js";
 
 export async function handleAuthRoute(request, response, body) {
   
@@ -208,6 +208,7 @@ export async function handleAuthRoute(request, response, body) {
     //   return true;
     // }
   }
+
   // if (request.method === "POST") {
   //   request.body = body;
   //   await handleReadBillingData(request, response);
@@ -225,6 +226,12 @@ export async function handleAuthRoute(request, response, body) {
   //   return true;
   // }
   
+  // STOCK TRANSACTION HISTORY
+  if (pathname === "/api/stock-transaction" && request.method === "GET") {
+    await handleReadStockTransaction(request, response);
+    return true;
+  }
+
 
   return false;
 }

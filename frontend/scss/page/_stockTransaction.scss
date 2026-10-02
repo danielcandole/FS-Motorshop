@@ -1,0 +1,260 @@
+.stockTransactionPage {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+
+  width: 100%;
+  padding-left: 260px;
+  .pageHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+
+    .pageHeaderContent {
+      h1 {
+        margin: 0;
+        font-size: 1.5rem;
+      }
+
+      p {
+        margin: 6px 0 0;
+        color: var(--text-secondary);
+      }
+    }
+  }
+
+  // TRANSACTION SUMMARY
+  .stockTransactionSummary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+
+    .summaryCard {
+      padding: 20px;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      background: var(--surface-color);
+
+      h2 {
+        margin: 0;
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+      }
+
+      p {
+        margin: 16px 0 0;
+        font-size: 1.75rem;
+        font-weight: 700;
+      }
+    }
+  }
+
+  // TRANSACTION SECTION
+  .stockTransactionSection {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
+    .sectionHeader {
+      h2 {
+        margin: 0;
+        font-size: 1.2rem;
+      }
+    }
+  }
+
+  // SEARCH AND FILTER
+  .stockTransactionControls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .searchGroup {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .filterGroup {
+      width: 200px;
+      flex-shrink: 0;
+    }
+
+    input,
+    select {
+      width: 100%;
+      min-height: 42px;
+      padding: 10px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--surface-color);
+      color: var(--text-color);
+      font: inherit;
+    }
+
+    input:focus,
+    select:focus {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 1px;
+    }
+  }
+
+  // TABLE
+  .tableContainer {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+  }
+
+  .stockTransactionTable {
+    width: 100%;
+    border-collapse: collapse;
+    white-space: nowrap;
+
+    th,
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-color);
+      text-align: left;
+    }
+
+    th {
+      background: var(--surface-color);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    td {
+      font-size: 0.9rem;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    tbody tr:hover {
+      background: var(--hover-color);
+    }
+
+    .transactionDate {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      .date {
+        font-weight: 500;
+      }
+
+      .time {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+      }
+    }
+
+    .transactionType {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 55px;
+      padding: 5px 9px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+
+      &.stockIn {
+        background: var(--success-background);
+        color: var(--success-color);
+      }
+
+      &.stockOut {
+        background: var(--danger-background);
+        color: var(--danger-color);
+      }
+    }
+
+    .quantityChanged {
+      font-weight: 600;
+
+      &.stockIn {
+        color: var(--success-color);
+      }
+
+      &.stockOut {
+        color: var(--danger-color);
+      }
+    }
+
+    .tableMessage {
+      padding: 32px 16px;
+      text-align: center;
+      color: var(--text-secondary);
+    }
+  }
+
+  // PAGINATION
+  .stockTransactionPagination {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+
+    button {
+      min-width: 36px;
+      min-height: 36px;
+      padding: 6px 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--surface-color);
+      color: var(--text-color);
+      font: inherit;
+      cursor: pointer;
+
+      &:hover:not(:disabled) {
+        background: var(--hover-color);
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      &.active {
+        border-color: var(--primary-color);
+        background: var(--primary-color);
+        color: white;
+      }
+    }
+
+    .paginationPages {
+      display: flex;
+      gap: 6px;
+    }
+  }
+}
+
+// RESPONSIVE
+@media (max-width: 768px) {
+  .stockTransactionPage {
+    .stockTransactionSummary {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .stockTransactionControls {
+      flex-direction: column;
+      align-items: stretch;
+
+      .filterGroup {
+        width: 100%;
+      }
+    }
+
+    .stockTransactionPagination {
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+  }
+}

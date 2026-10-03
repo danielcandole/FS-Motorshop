@@ -186,7 +186,7 @@ function createStockTransactionRow(transaction) {
     createStockTransactionCell(itemName)
   );
 
-  // UNIT PRICE
+  // PRICE
   row.appendChild(
     createStockTransactionCell(
       formatStockTransactionPrice(price)

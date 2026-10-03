@@ -57,7 +57,6 @@ async function readStockInTransactions(connection) {
       st.stockTransactionId,
       ii.itemName,
       ii.sellingPrice,
-      ii.quantity,
       st.transactionDate,
       st.transactionType,
       st.transactionQuantity
@@ -68,7 +67,7 @@ async function readStockInTransactions(connection) {
       st.transactionType = 'Stock In'
       AND ii.deletedAt IS NULL
   `);
-  // console.log("STOCK IN: ", transactions);
+  console.log("STOCK IN: ", transactions);
   return transactions;
 }
 
@@ -76,7 +75,7 @@ async function readStockOutTransactions(connection) {
   const [transactions] = await connection.execute(`
     SELECT
       st.stockTransactionId,
-      st.jobOrderItemId,
+      ii.itemName,
       joi.unitPrice,
       st.transactionDate,
       st.transactionType,
@@ -84,13 +83,16 @@ async function readStockOutTransactions(connection) {
     FROM stockTransaction AS st
     INNER JOIN jobOrderItem AS joi
       ON st.jobOrderItemId = joi.jobOrderItemId
+    INNER JOIN inventoryItem AS ii
+      ON joi.inventoryItemId = ii.inventoryItemId
     INNER JOIN jobOrder AS jo
       ON joi.jobOrderId = jo.jobOrderId
     WHERE
       st.transactionType = 'Stock Out'
       AND jo.deletedAt IS NULL
+      AND ii.deletedAt IS NULL
   `);
-  // console.log("STOCK OUT: ", transactions);
+  console.log("STOCK OUT: ", transactions);
   return transactions;
 }
 

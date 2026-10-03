@@ -157,8 +157,6 @@ function createStockTransactionRow(transaction) {
   const {
     stockTransactionId,
     itemName,
-    quantity,
-    quantityUsed,
     sellingPrice,
     unitPrice,
     transactionDate,
@@ -186,16 +184,6 @@ function createStockTransactionRow(transaction) {
   // ITEM NAME
   row.appendChild(
     createStockTransactionCell(itemName)
-  );
-
-  // QUANTITY
-  row.appendChild(
-    createStockTransactionCell(quantity)
-  );
-
-  // QUANTITY USED
-  row.appendChild(
-    createStockTransactionCell(quantityUsed)
   );
 
   // UNIT PRICE

@@ -1,0 +1,38 @@
+#receiptFileDialog {
+  width: 80vw;
+  height: 90vh;
+  max-width: 1200px;
+  max-height: 900px;
+  padding: 16px;
+  border: 1px solid #333;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+#receiptFileDialog::backdrop {
+  background: rgb(0 0 0 / 60%);
+}
+
+.receiptFileHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 40px;
+  margin-bottom: 8px;
+}
+
+.receiptFileHeader h3 {
+  margin: 0;
+}
+
+#closeReceiptDialog {
+  font-size: 20px;
+  cursor: pointer;
+}
+
+#receiptFileFrame {
+  display: block;
+  width: 100%;
+  height: calc(100% - 48px);
+  border: 1px solid #ccc;
+}

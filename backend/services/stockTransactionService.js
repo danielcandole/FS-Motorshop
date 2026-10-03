@@ -50,6 +50,71 @@ export async function createStockTransaction(connection, quantity, type, id) {
   ]);
 }
 
+// READ STOCK IN TRANSACTIONS
+async function readStockInTransactions(connection) {
+  const [transactions] = await connection.execute(`
+    SELECT
+      st.stockTransactionId,
+      ii.itemName,
+      ii.sellingPrice,
+      st.transactionDate,
+      st.transactionType,
+      st.transactionQuantity
+    FROM stockTransaction AS st
+    INNER JOIN inventoryItem AS ii
+      ON st.inventoryItemId = ii.inventoryItemId
+    WHERE
+      st.transactionType = 'Stock In'
+      AND ii.deletedAt IS NULL
+  `);
+  console.log("STOCK IN: ", transactions);
+  return transactions;
+}
+
+async function readStockOutTransactions(connection) {
+  const [transactions] = await connection.execute(`
+    SELECT
+      st.stockTransactionId,
+      ii.itemName,
+      joi.unitPrice,
+      st.transactionDate,
+      st.transactionType,
+      st.transactionQuantity
+    FROM stockTransaction AS st
+    INNER JOIN jobOrderItem AS joi
+      ON st.jobOrderItemId = joi.jobOrderItemId
+    INNER JOIN inventoryItem AS ii
+      ON joi.inventoryItemId = ii.inventoryItemId
+    INNER JOIN jobOrder AS jo
+      ON joi.jobOrderId = jo.jobOrderId
+    WHERE
+      st.transactionType = 'Stock Out'
+      AND jo.deletedAt IS NULL
+      AND ii.deletedAt IS NULL
+  `);
+  console.log("STOCK OUT: ", transactions);
+  return transactions;
+}
+
+// READ STOCK TRANSACTION
+export async function readStockTransactionData() {
+  try {
+    const [stockIn, stockOut] = await Promise.all([
+      readStockInTransactions(pool),
+      readStockOutTransactions(pool)
+    ]);
+    
+    return [...stockIn, ...stockOut].sort(
+      (a, b) =>
+        new Date(b.transactionDate) - new Date(a.transactionDate) ||
+        b.stockTransactionId - a.stockTransactionId
+    );
+  }
+  catch (error) {
+    console.error("Read Stock Transaction Service:", error);
+    throw error;
+  }
+}
 
 
 

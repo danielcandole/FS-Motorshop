@@ -1,1 +1,119 @@
-<h1>stock transaction</h1>
+<section
+  class="stockTransactionPage"
+  aria-labelledby="stockTransactionTitle"
+>
+  <header class="pageHeader">
+    <div class="pageHeaderContent">
+      <h1 id="stockTransactionTitle">Stock Transaction History</h1>
+      <p>View and track inventory stock movements.</p>
+    </div>
+  </header>
+
+  <!-- TRANSACTION SUMMARY -->
+  <section
+    class="stockTransactionSummary"
+    aria-label="Transaction Summary"
+  >
+    <article class="summaryCard">
+      <h2>Total Transactions</h2>
+      <p id="totalTransactions">0</p>
+    </article>
+
+    <article class="summaryCard">
+      <h2>Stock In</h2>
+      <p id="totalStockIn">0</p>
+    </article>
+
+    <article class="summaryCard">
+      <h2>Stock Out</h2>
+      <p id="totalStockOut">0</p>
+    </article>
+  </section>
+
+  <!-- TRANSACTION HISTORY -->
+  <section
+    class="stockTransactionSection"
+    aria-labelledby="stockTransactionListTitle"
+  >
+    <header class="sectionHeader">
+      <h2 id="stockTransactionListTitle">
+        All Transactions
+      </h2>
+    </header>
+
+    <!-- SEARCH AND FILTER -->
+    <div class="stockTransactionControls">
+      <div class="searchGroup">
+        <input
+          type="search"
+          id="stockTransactionSearch"
+          placeholder="Search item name or transaction ID"
+          aria-label="Search item name or transaction ID"
+        >
+      </div>
+
+      <div class="filterGroup">
+        <select
+          id="stockTransactionFilter"
+          aria-label="Filter transaction type"
+        >
+          <option value="all">All Transactions</option>
+          <option value="Stock In">Stock In</option>
+          <option value="Stock Out">Stock Out</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- TRANSACTION TABLE -->
+    <div class="tableContainer">
+      <table class="stockTransactionTable">
+        <thead>
+          <tr>
+            <th scope="col">ID</th>
+            <th scope="col">Item </th>
+            <th scope="col">Price</th>
+            <th scope="col">Date &amp; Time</th>
+            <th scope="col">Type</th>
+            <th scope="col">Qty Changed</th>
+          </tr>
+        </thead>
+
+        <tbody id="stockTransactionTableBody">
+          <tr>
+            <td colspan="8" class="tableMessage">
+              Loading transactions...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PAGINATION -->
+    <nav
+      class="stockTransactionPagination"
+      id="stockTransactionPagination"
+      aria-label="Transaction pages"
+    >
+      <button
+        type="button"
+        id="previousStockTransactionPage"
+        disabled
+      >
+        <!-- Previous -->
+      </button>
+
+      <div
+        class="paginationPages"
+        id="stockTransactionPages"
+      ></div>
+
+      <button
+        type="button"
+        id="nextStockTransactionPage"
+        disabled
+      >
+        <!-- Next -->
+      </button>
+    </nav>
+  </section>
+</section>

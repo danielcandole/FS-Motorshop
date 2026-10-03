@@ -230,7 +230,7 @@ function createStockTransactionRow(transaction) {
     isStockIn ? "stockIn" : "stockOut"
   }`;
 
-  typeBadge.textContent = isStockIn ? "IN" : "OUT";
+  typeBadge.textContent = isStockIn ? "Stock In" : "Stock Out";
 
   typeCell.appendChild(typeBadge);
   row.appendChild(typeCell);
@@ -344,33 +344,15 @@ function renderStockTransactionTable(elements) {
 // INITIALIZE STOCK TRANSACTION PAGE
 export async function initStockTransactionPage() {
   const elements = {
-    tableBody: document.getElementById(
-      "stockTransactionTableBody"
-    ),
-    totalTransactions: document.getElementById(
-      "totalTransactions"
-    ),
-    totalStockIn: document.getElementById(
-      "totalStockIn"
-    ),
-    totalStockOut: document.getElementById(
-      "totalStockOut"
-    ),
-    search: document.getElementById(
-      "stockTransactionSearch"
-    ),
-    filter: document.getElementById(
-      "stockTransactionFilter"
-    ),
-    previous: document.getElementById(
-      "previousStockTransactionPage"
-    ),
-    next: document.getElementById(
-      "nextStockTransactionPage"
-    ),
-    pages: document.getElementById(
-      "stockTransactionPages"
-    )
+    tableBody: document.getElementById("stockTransactionTableBody"),
+    totalTransactions: document.getElementById("totalTransactions"),
+    totalStockIn: document.getElementById("totalStockIn"),
+    totalStockOut: document.getElementById("totalStockOut"),
+    search: document.getElementById("stockTransactionSearch"),
+    filter: document.getElementById("stockTransactionFilter"),
+    previous: document.getElementById("previousStockTransactionPage"),
+    next: document.getElementById("nextStockTransactionPage"),
+    pages: document.getElementById("stockTransactionPages")
   };
 
   // CHECK REQUIRED ELEMENTS

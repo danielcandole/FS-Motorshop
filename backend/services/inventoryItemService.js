@@ -2,7 +2,7 @@ import pool from "../config/database.js";
 import { createStockTransaction, getStockTransactionDetails } from "./stockTransactionService.js";
 
 // DEDUCT INVENTORY STOCK
-export async function deductInventoryStock(connection, inventoryItemId, quantity) {
+export async function deductInventoryStock(connection, inventoryItemId, quantity, jobOrderItemId) {
   const [items] = await connection.execute(`
     SELECT quantity
     FROM inventoryItem
@@ -30,7 +30,7 @@ export async function deductInventoryStock(connection, inventoryItemId, quantity
     connection,
     quantity,
     "Stock Out",
-    { inventoryItemId }
+    { jobOrderItemId }
   );
 }
 
